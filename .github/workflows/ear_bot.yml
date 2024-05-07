@@ -18,7 +18,7 @@ jobs:
               echo "PDF file found"
           else
               echo "No PDF file found"
-              exit 0
+              exit 1
           fi
 
   add_label_and_reviewer:
