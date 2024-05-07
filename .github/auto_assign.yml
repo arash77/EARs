@@ -3,7 +3,8 @@ addReviewers: true
 addAssignees: true
 
 reviewers:
-  - arash77
+  - brilliantarash
 
 assignees:
   - arash77
+  - brilliantarash
