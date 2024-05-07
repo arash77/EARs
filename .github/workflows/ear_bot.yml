@@ -1,0 +1,51 @@
+name: The EARs Reviewing
+
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+
+jobs:
+  pdf_check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Check for PDF files
+        run: |
+          if [ -n "$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} | grep '.pdf')" ]; then
+              echo "PDF file found"
+          else
+              echo "No PDF file found"
+              exit 0
+          fi
+
+  add_label_and_reviewer:
+    needs: pdf_check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Add label
+        uses: actions/github-script@v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const issue = context.issue;
+            const label = "ERGA-BGE";
+            github.issues.addLabels({
+              ...issue,
+              labels: [label]
+            });
+      - name: Add reviewer and assignee
+        uses: actions/github-script@v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const issue = context.issue;
+            const reviewer = "username";
+            github.pulls.createReviewRequest({
+              ...issue,
+              reviewers: [reviewer]
+            });
+            github.issues.addAssignees({
+              ...issue,
+              assignees: [reviewer]
+            });
