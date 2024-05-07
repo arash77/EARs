@@ -1,7 +1,7 @@
 name: The EARs Reviewing
 
 on:
-  pull_request:
+  pull_request_target:
     types: [opened, edited, reopened, synchronize]
 
 jobs:
@@ -34,17 +34,14 @@ jobs:
               labels: ["ERGA-BGE"]
             });
       - name: Add reviewer and assignee
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const issue = context.issue;
-            const reviewer = "username";
-            github.pulls.createReviewRequest({
-              ...issue,
-              reviewers: [reviewer]
-            });
-            github.issues.addAssignees({
-              ...issue,
-              assignees: [reviewer]
-            });
+        uses: kentaro-m/auto-assign-action@v2.0.0
+        addReviewers: true
+
+# Set to true to add assignees to pull requests
+addAssignees: false
+
+# A list of reviewers to be added to pull requests (GitHub user name)
+reviewers:
+  - reviewerA
+  - reviewerB
+  - reviewerC
