@@ -51,7 +51,7 @@ jobs:
         with:
           script: |
             const researcher = context.payload.pull_request.user.login;
-            const message = "👋 Hi @${researcher}, thanks for sending the EAR of Valencia hispanica.\nI added the corresponding tag to the PR and appointed @${{ env.SUPERVISOR }} as the assignee to supervise.\nI will contact a reviewer ASAP.";
+            const message = '👋 Hi @${researcher}, thanks for sending the EAR of Valencia hispanica.\nI added the corresponding tag to the PR and appointed @${{ env.SUPERVISOR }} as the assignee to supervise.\nI will contact a reviewer ASAP.';
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
@@ -59,11 +59,11 @@ jobs:
               body: message
             });
 
-            const reviewer = 'Reviewer'; // Random name
+            const reviewer = 'arash77'; // Random name
             const currentDate = new Date();
             const deadline = new Date(currentDate.getTime() + (7 * 24 * 60 * 60 * 1000)); // 7 days from the current date
             const deadlineFormatted = deadline.toLocaleString('en-US', { timeZone: 'CET' });
-            const message = "👋 Hi @${reviewer}, do you agree to review this assembly?\n\nPlease reply to this message only with Yes or No by ${deadlineFormatted}.";
+            const message = '👋 Hi @${reviewer}, do you agree to review this assembly?\n\nPlease reply to this message only with Yes or No by ${deadlineFormatted}.';
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
