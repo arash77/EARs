@@ -37,7 +37,7 @@ jobs:
               pull_number: context.issue.number,
               assignees: ["${{ env.SUPERVISOR }}"]
             });
-            });
+            
             github.rest.pulls.requestReviewers({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -58,6 +58,7 @@ jobs:
               repo: context.repo.repo,
               body: message
             });
+            
             const reviewer = 'Reviewer'; // Random name
             const currentDate = new Date();
             const deadline = new Date(currentDate.getTime() + (7 * 24 * 60 * 60 * 1000)); // 7 days from the current date
