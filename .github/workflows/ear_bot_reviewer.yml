@@ -2,8 +2,12 @@ name: The EARs Reviewing bot for assigning reviewer
 
 on:
   workflow_run:
-    workflows: ["ear_bot_pr"]
-    types: [completed]
+    workflows: [The EARs Reviewing bot on PR]
+    types:
+      - completed
+
+  schedule:
+    - cron: "0 */12 * * *"
 
 jobs:
   add-reviewer:
