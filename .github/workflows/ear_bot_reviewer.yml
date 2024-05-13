@@ -25,7 +25,13 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install -r ear_bot/requirements.txt
-      # download artifact if it exists
+
+      - name: Download artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: artifact
+          path: artifact.json
+
       - name: Run python script to assign reviewer
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -33,7 +39,6 @@ jobs:
           REVIEWER: arash77,brilliantarash
           ARTIFACT_PATH: artifact.json
         run: python -u ear_bot/ear_bot_reviewer.py
-
 
       - name: Uplaod Artifact
         uses: actions/upload-artifact@v4

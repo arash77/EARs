@@ -11,55 +11,64 @@ cet = pytz.timezone("CET")
 g = Github(os.getenv("GITHUB_TOKEN"))
 repo = g.get_repo(f"{os.getenv('GITHUB_REPOSITORY')}")
 pull_requests = repo.get_pulls(state="open")
+closed_pull_requests = repo.get_pulls(state="closed")
 list_of_reviewers = os.getenv("REVIEWERS", "").split(",")
-artifact_path = os.path.join('ear_bot', os.getenv("ARTIFACT_PATH", "artifact.json"))
+artifact_path = os.path.join("ear_bot", os.getenv("ARTIFACT_PATH", "artifact.json"))
 
 
-def comment_to_random_reviewer(pr):
-    # get the not chosen reviewers and then choose one randomly
-    reviewer = random.choice(list_of_reviewers)
+def comment_to_random_reviewer(pr, reviewers):
+    if not reviewers:
+        return []
+    reviewer = random.choice(reviewers)
     current_date = datetime.now(tz=cet).replace(microsecond=0)
     pr.create_issue_comment(
         f"👋 Hi @{reviewer}, do you agree to review this assembly?\n\nPlease reply to this message only with Yes or No by {current_date + timedelta(days=7)}"
     )
+    return [reviewer]
 
 
 def main():
-    save_pr_data = []
+    save_pr_data = {}
     if os.path.exists(artifact_path):
         with open(artifact_path, "r") as file:
             save_pr_data = json.load(file)
+        for closed_pr in closed_pull_requests:
+            closed_pr_number = str(closed_pr.number)
+            if closed_pr_number in save_pr_data:
+                del save_pr_data[closed_pr_number]
 
     current_date = datetime.now(tz=cet).replace(microsecond=0)
-    # set to central european time
     for pr in pull_requests:
+        pr_number = str(pr.number)
         if len(pr.requested_reviewers) < 2:
-            for comment in pr.get_issue_comments().reversed:
-                if comment.user.type == "Bot":
-                    text_to_check = (
-                        "Please reply to this message only with Yes or No by"
-                    )
-                    if text_to_check in comment.body:
-                        date_in_text = comment.body.split(text_to_check)[1].strip()
-                        # use this to convert the date to the same timezone as the current date (CET)
-                        if comment.created_at + timedelta(days=7) < current_date:
-                            comment_to_random_reviewer(pr)
-                        break
-        # save the pr data only if it was not saved before
-        # if the new reviewer was added, the data will be updated
-        if not any(pr_data["pr_number"] == pr.number for pr_data in save_pr_data):
-            save_pr_data.append(
-                {
-                    "pr_number": pr.number,
-                    "date": current_date.isoformat(),
-                    "requested_reviewers": [
-                        reviewer.login for reviewer in pr.requested_reviewers
-                    ],
-                }
+            left_reviewers = list_of_reviewers
+            old_reviewers = save_pr_data.get(pr_number, {}).get(
+                "requested_reviewers", []
             )
+            comment_date = save_pr_data.get(pr_number, {}).get("date")
+            for comment in pr.get_issue_comments().reversed:
+                text_to_check = "Please reply to this message only with Yes or No by"
+                if comment.user.type == "Bot" and text_to_check in comment.body:
+                    comment_date = comment.created_at.astimezone(cet)
+                    deadline = comment_date + timedelta(days=7)
+                    comment_date = comment_date.isoformat()
+                    left_reviewers = (
+                        list(set(list_of_reviewers) - set(old_reviewers))
+                        if deadline < current_date
+                        else []
+                    )
+                    break
+            new_reviewer = comment_to_random_reviewer(pr, left_reviewers)
+            save_pr_data[pr_number] = {
+                "date": (
+                    current_date.isoformat()
+                    if new_reviewer or not comment_date
+                    else comment_date
+                ),
+                "requested_reviewers": old_reviewers + new_reviewer,
+            }
     with open(artifact_path, "w") as file:
         json.dump(save_pr_data, file, indent=4)
-        
 
 
 if __name__ == "__main__":
