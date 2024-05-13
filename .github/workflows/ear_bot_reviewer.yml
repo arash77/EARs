@@ -33,7 +33,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-          REVIEWER: arash77,brilliantarash
+          REVIEWERS: arash77,brilliantarash
           ARTIFACT_PATH: artifact.json
         run: python -u ear_bot/ear_bot_reviewer.py
 
