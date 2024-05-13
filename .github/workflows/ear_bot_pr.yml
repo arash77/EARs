@@ -1,4 +1,4 @@
-name: The EARs Reviewing bot on PR
+name: The EARs Reviewing bot
 
 on:
   pull_request:
