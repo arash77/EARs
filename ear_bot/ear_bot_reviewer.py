@@ -1,9 +1,10 @@
-from datetime import datetime, timedelta, timezone
-from github import Github
-import os
 import json
-import pytz
+import os
 import random
+from datetime import datetime, timedelta
+
+import pytz
+from github import Github
 
 cet = pytz.timezone("CET")
 
