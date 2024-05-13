@@ -2,7 +2,7 @@ name: The EARs Reviewing bot for assigning reviewer
 
 on:
   workflow_run:
-    workflows: [The EARs Reviewing bot on PR]
+    workflows: ["The EARs Reviewing bot on PR"]
     types:
       - completed
 
