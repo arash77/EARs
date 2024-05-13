@@ -6,9 +6,6 @@ on:
     types:
       - completed
 
-  schedule:
-    - cron: "0 */12 * * *"
-
 jobs:
   add-reviewer:
     runs-on: ubuntu-latest
