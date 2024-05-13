@@ -29,12 +29,6 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r ear_bot/requirements.txt
 
-      - name: Download artifact
-        uses: actions/download-artifact@v2
-        with:
-          name: artifact
-          path: artifact.json
-
       - name: Run python script to assign reviewer
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -43,8 +37,7 @@ jobs:
           ARTIFACT_PATH: artifact.json
         run: python -u ear_bot/ear_bot_reviewer.py
 
-      - name: Uplaod Artifact
-        uses: actions/upload-artifact@v4
+      - name: Uplaod artifact.json
+        uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          name: artifact
-          path: artifact.json
+          file_pattern: "ear_bot/artifact.json"
