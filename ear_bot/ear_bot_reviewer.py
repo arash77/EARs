@@ -49,7 +49,8 @@ def find_reviewer(prs=[], deadline_check=True):
             for comment in pr.get_issue_comments().reversed:
                 text_to_check = "Please reply to this message only with Yes or No by"
                 if comment.user.type == "Bot" and text_to_check in comment.body:
-                    old_reviewers = comment.body.split("Hi @")[1].split(",")[0].split()
+                    comment_reviewer = comment.body.split("Hi @")[1].split(",")[0]
+                    old_reviewers.append(comment_reviewer) if comment_reviewer not in old_reviewers else None
                     date = comment.created_at.astimezone(cet)
                     deadline = date + timedelta(days=7)
                     if deadline > current_date:
@@ -85,6 +86,14 @@ def assign_reviewer():
     if comment_author in [rr.login for rr in pr.requested_reviewers]:
         print("The reviewer has already been assigned.")
         sys.exit()
+    for comment in pr.get_issue_comments().reversed:
+        text_to_check = "Please reply to this message only with Yes or No by"
+        if comment.user.type == "Bot" and text_to_check in comment.body:
+            comment_reviewer = comment.body.split("Hi @")[1].split(",")[0]
+            break
+    if comment_author != comment_reviewer:
+        print("The reviewer is not the one who was asked to review the PR.")
+        sys.exit(1)
     if "yes" in comment_text.lower():
         pr.create_review_request([comment_author])
     elif "no" in comment_text.lower():
