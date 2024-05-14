@@ -29,13 +29,13 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r ear_bot/requirements.txt
 
-      - name: Run python script to assign reviewer
+      - name: Run python script to find a reviewer
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           REVIEWERS: arash77,brilliantarash
           ARTIFACT_PATH: artifact.json
-        run: python -u ear_bot/ear_bot_reviewer.py
+        run: python -u ear_bot/ear_bot_reviewer.py --search
 
       - name: Uplaod artifact.json
         uses: stefanzweifel/git-auto-commit-action@v5

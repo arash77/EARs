@@ -1,0 +1,33 @@
+name: The EARs Reviewing bot on comments
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  assign-reviewer:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: 3.9
+
+      - name: Run python script to assign reviewer
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          COMMENT_TEXT: ${{ github.event.comment.body }}
+          COMMENT_AUTHOR: ${{ github.event.comment.user.login }}
+          PR_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          if [[ "${{ github.event.comment.body }}" == "YES" || "${{ github.event.comment.body }}" == "NO" ]]; then
+            python -m pip install --upgrade pip
+            python -m pip install -r ear_bot/requirements.txt
+            python -u ear_bot/ear_bot_reviewer.py --comment
+          else
+            echo "Skipping job as COMMENT TEXT is not 'YES' or 'NO'"
+          fi
