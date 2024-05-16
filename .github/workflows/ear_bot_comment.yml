@@ -25,7 +25,7 @@ jobs:
           PR_NUMBER: ${{ github.event.issue.number }}
         run: |
           comment_body=$(echo "${{ github.event.comment.body }}" | tr '[:upper:]' '[:lower:]')
-          if [[ "${comment_body}" == "yes" || "${comment_body}" == "no" ]]; then
+          if [[ "${comment_body}" =~ (yes|no) ]]; then
             python -m pip install --upgrade pip
             python -m pip install -r ear_bot/requirements.txt
             python -u ear_bot/ear_bot_reviewer.py --comment

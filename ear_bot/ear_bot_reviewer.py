@@ -25,7 +25,6 @@ else:
     sys.exit(1)
 
 
-
 def find_reviewer(prs=[], deadline_check=True):
     save_pr_data = {}
     if os.path.exists(artifact_path):
@@ -48,7 +47,7 @@ def find_reviewer(prs=[], deadline_check=True):
         pr_number = str(pr.number)
         pr_data = save_pr_data.get(pr_number, {})
         old_reviewers = pr_data.get("requested_reviewers", [])
-        if set(old_reviewers) == set(list_of_reviewers):
+        if set(map(str.lower, old_reviewers)) == set(map(str.lower, list_of_reviewers)):
             old_reviewers = []  # Reset the reviewers if all reviewers have been asked
         left_reviewers = list(set(list_of_reviewers) - set(old_reviewers))
         date = pr_data.get("date", current_date)
@@ -57,7 +56,11 @@ def find_reviewer(prs=[], deadline_check=True):
                 text_to_check = "Please reply to this message only with Yes or No by"
                 if comment.user.type == "Bot" and text_to_check in comment.body:
                     comment_reviewer = comment.body.split("Hi @")[1].split(",")[0]
-                    old_reviewers.append(comment_reviewer) if comment_reviewer not in old_reviewers else None
+                    (
+                        old_reviewers.append(comment_reviewer)
+                        if comment_reviewer not in old_reviewers
+                        else None
+                    )
                     date = comment.created_at.astimezone(cet)
                     deadline = date + timedelta(days=7)
                     if deadline > current_date:
@@ -94,11 +97,13 @@ def assign_reviewer():
         print("The reviewer has already been assigned.")
         sys.exit()
     for comment in pr.get_issue_comments().reversed:
-        text_to_check = "Please reply to this message only with Yes or No by"
+        text_to_check = "Please reply to this message only with Yes or No"
         if comment.user.type == "Bot" and text_to_check in comment.body:
             comment_reviewer = comment.body.split("Hi @")[1].split(",")[0]
             break
-    if comment_author != comment_reviewer:
+    print(f"Comment author: {comment_author}")
+    print(f"Comment reviewer: {comment_reviewer}")
+    if comment_author.lower() != comment_reviewer.lower():
         print("The reviewer is not the one who was asked to review the PR.")
         sys.exit(1)
     if "yes" in comment_text.lower():
