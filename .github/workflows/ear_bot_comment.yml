@@ -5,7 +5,7 @@ on:
     types: [created]
 
 jobs:
-  assign-reviewer:
+  request-reviewer:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

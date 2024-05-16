@@ -10,7 +10,7 @@ on:
     - cron: "0 */1 * * *"
 
 jobs:
-  add-reviewer:
+  comment-reviewer:
     runs-on: ubuntu-latest
     permissions:
       contents: write

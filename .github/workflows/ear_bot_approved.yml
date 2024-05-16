@@ -1,0 +1,25 @@
+name: The EARs Reviewing bot on approved changes
+
+on:
+  pull_request_review:
+    types: [submitted]
+
+jobs:
+  approved-changes:
+    runs-on: ubuntu-latest
+    env:
+      SUPERVISOR: brilliantarash
+    steps:
+      - name: Create comment for supervisor and reviewer
+        if: github.event.review.state == 'approved'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const researcher = context.payload.pull_request.user.login;
+            const message = `Thanks @${github.event.review.user.login} for doing the review. I will add a new reviewed species for you to the table when @${{ env.SUPERVISOR }} gives thumbs up and merges the PR. After merging, you will be go to upload the assembly to ENA.`;
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: message
+            });
