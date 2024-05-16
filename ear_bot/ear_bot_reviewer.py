@@ -15,8 +15,15 @@ g = Github(os.getenv("GITHUB_TOKEN"))
 repo = g.get_repo(f"{os.getenv('GITHUB_REPOSITORY')}")
 pull_requests = repo.get_pulls(state="open")
 closed_pull_requests = repo.get_pulls(state="closed")
-list_of_reviewers = os.getenv("REVIEWERS", "").split(",")
 artifact_path = os.path.join("ear_bot", os.getenv("ARTIFACT_PATH", "artifact.json"))
+reviewers_path = os.path.join("ear_bot", os.getenv("REVIEWERS_PATH", "reviewers.txt"))
+if os.path.exists(reviewers_path):
+    with open(reviewers_path, "r") as file:
+        list_of_reviewers = file.read().splitlines()
+else:
+    print("Missing reviewers file.")
+    sys.exit(1)
+
 
 
 def find_reviewer(prs=[], deadline_check=True):
