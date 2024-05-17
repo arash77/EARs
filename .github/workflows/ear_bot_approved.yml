@@ -8,10 +8,16 @@ jobs:
   approved-changes:
     runs-on: ubuntu-latest
     env:
-      SUPERVISOR: brilliantarash
+      SUPERVISOR_PATH: supervisor.txt
     steps:
+      - name: Get supervisor name
+        id: get_supervisor
+        run: |
+          SUPERVISOR=$(cat ear_bot/${{ env.SUPERVISOR_PATH }})
+          echo "supervisor=$SUPERVISOR" >> $GITHUB_OUTPUT
+
       - name: Create comment for supervisor and reviewer
-        if: github.event.review.state == 'approved' && github.event.review.user.login != env.SUPERVISOR
+        if: github.event.review.state == 'approved' && github.event.review.user.login != steps.get_supervisor.outputs.supervisor
         uses: actions/github-script@v7
         with:
           script: |

@@ -7,6 +7,8 @@ on:
 jobs:
   request-reviewer:
     runs-on: ubuntu-latest
+    env:
+      SUPERVISOR_PATH: supervisor.txt
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -23,6 +25,8 @@ jobs:
           COMMENT_TEXT: ${{ github.event.comment.body }}
           COMMENT_AUTHOR: ${{ github.event.comment.user.login }}
           PR_NUMBER: ${{ github.event.issue.number }}
+          REVIEWERS_PATH: reviewers.txt
+          ARTIFACT_PATH: artifact.json
         run: |
           comment_body=$(echo "${{ github.event.comment.body }}" | tr '[:upper:]' '[:lower:]')
           if [[ "${comment_body}" =~ (yes|no) ]]; then

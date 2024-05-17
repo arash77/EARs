@@ -107,7 +107,12 @@ def assign_reviewer():
         print("The reviewer is not the one who was asked to review the PR.")
         sys.exit(1)
     if "yes" in comment_text.lower():
-        supervisor = "brilliantarash" # NEED TO ADD
+        supervisor_path = os.path.join("ear_bot", os.getenv("SUPERVISOR_PATH", "supervisor.txt"))
+        if not os.path.exists(supervisor_path):
+            print("Missing supervisor file.")
+            sys.exit(1)
+        with open(supervisor_path, "r") as file:
+            supervisor = file.read().strip()
         pr.create_review_request([comment_author])
         pr.create_issue_comment(
             f"Thank you @{comment_author} for agreeing 👍\n"
