@@ -73,7 +73,7 @@ def find_reviewer(prs=[], deadline_check=True):
             pr.create_issue_comment(
                 f"👋 Hi @{reviewer}, do you agree to review this assembly?\n\n"
                 "Please reply to this message only with Yes or No by"
-                f" {current_date + timedelta(days=7)}"
+                f" **{current_date + timedelta(days=7)}**"
             )
             new_reviewer = [reviewer]
 
@@ -107,13 +107,13 @@ def assign_reviewer():
         print("The reviewer is not the one who was asked to review the PR.")
         sys.exit(1)
     if "yes" in comment_text.lower():
+        supervisor = "brilliantarash" # NEED TO ADD
         pr.create_review_request([comment_author])
         pr.create_issue_comment(
-            "👍 Thanks for agreeing :D\n"
+            f"Thank you @{comment_author} for agreeing 👍\n"
             "I appointed you as the EAR reviewer.\n"
-            "I will change your status to Busy until you finish this review.\n"
             "Please check the Wiki if you need to refresh something.\n"
-            "Contact the PR assignee for any issues."
+            f"Contact the @{supervisor} for any issues."
         )
     elif "no" in comment_text.lower():
         find_reviewer([pr], deadline_check=False)

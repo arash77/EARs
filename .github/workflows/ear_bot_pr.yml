@@ -46,7 +46,7 @@ jobs:
         with:
           script: |
             const researcher = context.payload.pull_request.user.login;
-            const message1 = `👋 Hi @${researcher}, thanks for sending the EAR of Valencia hispanica.\nI added the corresponding tag to the PR and appointed @${{ env.SUPERVISOR }} as the assignee to supervise.\nI will contact a reviewer ASAP.`;
+            const message1 = `👋 Hi @${researcher}, thanks for sending the EAR.\nI added the corresponding tag to the PR and appointed @${{ env.SUPERVISOR }} as the assignee to supervise.`;
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
