@@ -26,7 +26,7 @@ else:
 
 
 def find_reviewer(prs=[], deadline_check=True):
-    save_pr_data = {}
+    save_pr_data = {"pr": {}, "busy_reviewers": []}
     if os.path.exists(artifact_path):
         with open(artifact_path, "r") as file:
             save_pr_data = json.load(file)
@@ -34,7 +34,7 @@ def find_reviewer(prs=[], deadline_check=True):
         for closed_pr in closed_pull_requests:
             closed_pr_number = str(closed_pr.number)
             if closed_pr_number in save_pr_data:
-                del save_pr_data[closed_pr_number]
+                del save_pr_data["pr"][closed_pr_number]
 
     current_date = datetime.now(tz=cet).replace(microsecond=0)
 
@@ -45,7 +45,7 @@ def find_reviewer(prs=[], deadline_check=True):
         if len(pr.requested_reviewers) > 1:
             continue
         pr_number = str(pr.number)
-        pr_data = save_pr_data.get(pr_number, {})
+        pr_data = save_pr_data["pr"].get(pr_number, {})
         old_reviewers = pr_data.get("requested_reviewers", [])
         if set(map(str.lower, old_reviewers)) == set(map(str.lower, list_of_reviewers)):
             old_reviewers = []  # Reset the reviewers if all reviewers have been asked
@@ -77,10 +77,11 @@ def find_reviewer(prs=[], deadline_check=True):
             )
             new_reviewer = [reviewer]
 
-        save_pr_data[pr_number] = {
+        save_pr_data["pr"][pr_number] = {
             "date": date,
             "requested_reviewers": old_reviewers + new_reviewer,
         }
+
     with open(artifact_path, "w") as file:
         json.dump(save_pr_data, file, indent=4, default=str)
 
@@ -107,7 +108,9 @@ def assign_reviewer():
         print("The reviewer is not the one who was asked to review the PR.")
         sys.exit(1)
     if "yes" in comment_text.lower():
-        supervisor_path = os.path.join("ear_bot", os.getenv("SUPERVISOR_PATH", "supervisor.txt"))
+        supervisor_path = os.path.join(
+            "ear_bot", os.getenv("SUPERVISOR_PATH", "supervisor.txt")
+        )
         if not os.path.exists(supervisor_path):
             print("Missing supervisor file.")
             sys.exit(1)
@@ -120,6 +123,9 @@ def assign_reviewer():
             "Please check the Wiki if you need to refresh something.\n"
             f"Contact the @{supervisor} for any issues."
         )
+        # busy_reviewers = save_pr_data["busy_reviewers"]
+        # busy_reviewers.append(comment_author)
+        # save_pr_data["busy_reviewers"] = busy_reviewers
     elif "no" in comment_text.lower():
         find_reviewer([pr], deadline_check=False)
     else:
