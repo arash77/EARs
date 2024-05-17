@@ -24,7 +24,7 @@ jobs:
             });
 
             const fs = require('fs');
-            const supervisorContent = fs.readFileSync('ear_bot/${{env.SUPERVISOR_PATH}}', 'utf8');
+            const supervisorContent = fs.readFileSync('${{ github.workspace }}/ear_bot/${{ env.SUPERVISOR_PATH }}', 'utf8');
             github.rest.issues.addAssignees({
               owner: context.repo.owner,
               repo: context.repo.repo,
