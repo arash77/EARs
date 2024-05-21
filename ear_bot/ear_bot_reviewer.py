@@ -123,6 +123,9 @@ class EARBotReviewer():
             if comment.user.type == "Bot" and text_to_check in comment.body:
                 comment_reviewer = comment.body.split("Hi @")[1].split(",")[0].lower()
                 break
+        if not comment_reviewer:
+            print("Missing reviewer from the comment.")
+            sys.exit(1)
         if comment_author != comment_reviewer:
             print("The reviewer is not the one who was asked to review the PR.")
             sys.exit(1)
