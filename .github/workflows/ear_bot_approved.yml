@@ -6,6 +6,7 @@ on:
 
 jobs:
   approved-changes:
+    if: github.event.review.state == 'approved' && contains(github.event.pull_request.labels.*.name, 'ERGA-BGE')
     runs-on: ubuntu-latest
     env:
       SUPERVISOR_PATH: supervisor.txt
@@ -20,7 +21,7 @@ jobs:
           echo "supervisor=$SUPERVISOR" >> $GITHUB_OUTPUT
 
       - name: Create comment for supervisor and reviewer
-        if: github.event.review.state == 'approved' && github.event.review.user.login != steps.get_supervisor.outputs.supervisor
+        if: github.event.review.user.login != steps.get_supervisor.outputs.supervisor
         uses: actions/github-script@v7
         with:
           script: |
