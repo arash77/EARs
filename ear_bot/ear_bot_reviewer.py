@@ -29,7 +29,7 @@ class EARBot_artifact:
             json.dump(save_pr_data, file, indent=4, default=str)
 
 
-class EARBotReviewer():
+class EARBotReviewer:
     def __init__(self) -> None:
         g = Github(os.getenv("GITHUB_TOKEN"))
         self.repo = g.get_repo(str(os.getenv("GITHUB_REPOSITORY")))
@@ -115,7 +115,9 @@ class EARBotReviewer():
             print("Missing required environment variables.")
             sys.exit(1)
         pr = self.repo.get_pull(int(pr_number))
-        if comment_author in map(str.lower, [rr.login for rr in pr.requested_reviewers]):
+        if comment_author in map(
+            str.lower, [rr.login for rr in pr.requested_reviewers]
+        ):
             print("The reviewer has already been assigned.")
             sys.exit()
         for comment in pr.get_issue_comments().reversed:
@@ -159,9 +161,9 @@ class EARBotReviewer():
 def remove_reviewer():
     artifact = EARBot_artifact()
     reviewer = os.getenv("REVIEWER").lower()
-    if not reviewer:
-        print("Missing reviewer.")
-        sys.exit(1)
+    if reviewer not in artifact.load_pr_data()["busy_reviewers"]:
+        print("The reviewer is not busy.")
+        sys.exit()
     save_pr_data = artifact.load_pr_data()
     save_pr_data["busy_reviewers"].remove(reviewer)
     artifact.dump_pr_data(save_pr_data)
