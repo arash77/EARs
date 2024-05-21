@@ -159,6 +159,9 @@ class EARBotReviewer():
 def remove_reviewer():
     artifact = EARBot_artifact()
     reviewer = os.getenv("REVIEWER").lower()
+    if not reviewer:
+        print("Missing reviewer.")
+        sys.exit(1)
     save_pr_data = artifact.load_pr_data()
     save_pr_data["busy_reviewers"].remove(reviewer)
     artifact.dump_pr_data(save_pr_data)
