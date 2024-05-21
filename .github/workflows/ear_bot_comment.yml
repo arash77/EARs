@@ -36,3 +36,9 @@ jobs:
           else
             echo "Skipping job as COMMENT TEXT is not 'YES' or 'NO'"
           fi
+
+      - name: Uplaod artifact.json
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          file_pattern: "ear_bot/artifact.json"
+          

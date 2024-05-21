@@ -150,7 +150,7 @@ class EARBotReviewer:
             save_pr_data = self.artifact.load_pr_data()
             if comment_author not in save_pr_data["busy_reviewers"]:
                 save_pr_data["busy_reviewers"].append(comment_author)
-            self.artifact.dump_pr_data(save_pr_data)
+                self.artifact.dump_pr_data(save_pr_data)
         elif "no" in comment_text:
             self.find_reviewer([pr], deadline_check=False)
         else:
