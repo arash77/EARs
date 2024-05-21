@@ -12,7 +12,7 @@ jobs:
       SUPERVISOR_PATH: supervisor.txt
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Get supervisor name
         id: get_supervisor
@@ -32,6 +32,11 @@ jobs:
               repo: context.repo.repo,
               body: message
             });
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
 
       - name: Remove reviewer from the busy reviewers
         env:
