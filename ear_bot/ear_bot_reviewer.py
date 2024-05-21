@@ -115,7 +115,7 @@ class EARBotReviewer():
             print("Missing required environment variables.")
             sys.exit(1)
         pr = self.repo.get_pull(int(pr_number))
-        if comment_author in [rr.login.lower() for rr in pr.requested_reviewers]:
+        if comment_author in map(str.lower, [rr.login for rr in pr.requested_reviewers]):
             print("The reviewer has already been assigned.")
             sys.exit()
         for comment in pr.get_issue_comments().reversed:
