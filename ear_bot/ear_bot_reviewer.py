@@ -48,7 +48,7 @@ class EARBotReviewer():
 
     def find_reviewer(self, prs=[], deadline_check=True):
         save_pr_data = self.artifact.load_pr_data()
-        if save_pr_data and not prs:
+        if save_pr_data.get("pr"):
             for closed_pr in self.closed_pull_requests:
                 closed_pr_number = str(closed_pr.number)
                 if closed_pr_number in save_pr_data:
