@@ -29,7 +29,7 @@ class EARBot_artifact:
             json.dump(save_pr_data, file, indent=4, default=str)
 
 
-class EARBotReviewer(EARBot_artifact):
+class EARBotReviewer():
     def __init__(self) -> None:
         g = Github(os.getenv("GITHUB_TOKEN"))
         self.repo = g.get_repo(str(os.getenv("GITHUB_REPOSITORY")))
@@ -44,9 +44,10 @@ class EARBotReviewer(EARBot_artifact):
         else:
             print("Missing reviewers file.")
             sys.exit(1)
+        self.artifact = EARBot_artifact()
 
     def find_reviewer(self, prs=[], deadline_check=True):
-        save_pr_data = self.load_pr_data()
+        save_pr_data = self.artifact.load_pr_data()
         if save_pr_data and not prs:
             for closed_pr in self.closed_pull_requests:
                 closed_pr_number = str(closed_pr.number)
@@ -104,7 +105,7 @@ class EARBotReviewer(EARBot_artifact):
                 "requested_reviewers": list(old_reviewers | new_reviewer),
             }
 
-        self.dump_pr_data(save_pr_data)
+        self.artifact.dump_pr_data(save_pr_data)
 
     def assign_reviewer(self):
         comment_text = os.getenv("COMMENT_TEXT").lower()
@@ -141,10 +142,10 @@ class EARBotReviewer(EARBot_artifact):
                 "Please check the Wiki if you need to refresh something.\n"
                 f"Contact the @{supervisor} for any issues."
             )
-            save_pr_data = self.load_pr_data()
+            save_pr_data = self.artifact.load_pr_data()
             if comment_author not in save_pr_data["busy_reviewers"]:
                 save_pr_data["busy_reviewers"].append(comment_author)
-            self.dump_pr_data(save_pr_data)
+            self.artifact.dump_pr_data(save_pr_data)
         elif "no" in comment_text:
             self.find_reviewer([pr], deadline_check=False)
         else:
