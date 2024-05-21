@@ -32,3 +32,17 @@ jobs:
               repo: context.repo.repo,
               body: message
             });
+
+      - name: Remove reviewer from the busy reviewers
+        env:
+          ARTIFACT_PATH: artifact.json
+          REVIEWER: ${{ github.event.review.user.login }}
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r ear_bot/requirements.txt
+          python -u ear_bot/ear_bot_reviewer.py --remove
+
+      - name: Uplaod artifact.json
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          file_pattern: "ear_bot/artifact.json"
