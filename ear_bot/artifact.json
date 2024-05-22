@@ -1,4 +1,11 @@
 {
-    "pr": {},
+    "pr": {
+        "12": {
+            "date": "2024-05-22 14:44:58+02:00",
+            "requested_reviewers": [
+                "brilliantarash"
+            ]
+        }
+    },
     "busy_reviewers": []
 }
