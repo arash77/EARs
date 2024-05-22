@@ -51,7 +51,7 @@ class EARBotReviewer:
         if save_pr_data.get("pr"):
             for closed_pr in self.closed_pull_requests:
                 closed_pr_number = str(closed_pr.number)
-                if closed_pr_number in save_pr_data:
+                if closed_pr_number in save_pr_data["pr"]:
                     del save_pr_data["pr"][closed_pr_number]
 
         current_date = datetime.now(tz=cet).replace(microsecond=0)
