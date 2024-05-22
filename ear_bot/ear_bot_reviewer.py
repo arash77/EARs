@@ -80,9 +80,9 @@ class EARBotReviewer:
                         "Please reply to this message only with Yes or No by"
                     )
                     if comment.user.type == "Bot" and text_to_check in comment.body:
-                        comment_reviewer = (
+                        comment_reviewer = {
                             comment.body.split("Hi @")[1].split(",")[0].lower()
-                        )
+                        }
                         old_reviewers.update(comment_reviewer)
                         date = comment.created_at.astimezone(cet)
                         deadline = date + timedelta(days=7)
@@ -99,7 +99,6 @@ class EARBotReviewer:
                     f" **{current_date + timedelta(days=7)}**"
                 )
                 new_reviewer = {reviewer}
-
             save_pr_data["pr"][pr_number] = {
                 "date": date,
                 "requested_reviewers": list(old_reviewers | new_reviewer),

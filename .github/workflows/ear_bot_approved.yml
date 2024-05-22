@@ -13,6 +13,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: "main"
 
       - name: Get supervisor name
         id: get_supervisor
@@ -39,6 +41,7 @@ jobs:
           python-version: "3.10"
 
       - name: Remove reviewer from the busy reviewers
+        if: github.event.review.user.login != steps.get_supervisor.outputs.supervisor
         env:
           ARTIFACT_PATH: artifact.json
           REVIEWER: ${{ github.event.review.user.login }}
@@ -48,6 +51,7 @@ jobs:
           python -u ear_bot/ear_bot_reviewer.py --remove
 
       - name: Uplaod artifact.json
+        if: github.event.review.user.login != steps.get_supervisor.outputs.supervisor
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           file_pattern: "ear_bot/artifact.json"
