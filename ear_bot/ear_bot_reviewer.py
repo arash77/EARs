@@ -60,9 +60,11 @@ class EARBotReviewer:
             prs = self.pull_requests
 
         for pr in prs:
-            if len(pr.requested_reviewers) > 1 or "ERGA-BGE" not in [
-                label.name for label in pr.get_labels()
-            ]:
+            if (
+                len(pr.requested_reviewers) > 1
+                or "ERGA-BGE" not in [label.name for label in pr.get_labels()]
+                or pr.get_reviews().totalCount > 0
+            ):
                 continue
             pr_number = str(pr.number)
             pr_data = save_pr_data["pr"].get(pr_number, {})
@@ -153,22 +155,30 @@ class EARBotReviewer:
             if comment_author not in save_pr_data["busy_reviewers"]:
                 save_pr_data["busy_reviewers"].append(comment_author)
                 self.artifact.dump_pr_data(save_pr_data)
+            pr.add_to_labels("testing")
         elif "no" in comment_text:
             self.find_reviewer([pr], deadline_check=False)
         else:
             print("Invalid comment text.")
             sys.exit(1)
 
-
-def remove_reviewer():
-    artifact = EARBot_artifact()
-    reviewer = os.getenv("REVIEWER").lower()
-    if reviewer not in artifact.load_pr_data()["busy_reviewers"]:
-        print("The reviewer is not busy.")
-        sys.exit()
-    save_pr_data = artifact.load_pr_data()
-    save_pr_data["busy_reviewers"].remove(reviewer)
-    artifact.dump_pr_data(save_pr_data)
+    def remove_reviewer(self):
+        pr_number = os.getenv("PR_NUMBER")
+        pr = self.repo.get_pull(int(pr_number))
+        reviewer = os.getenv("REVIEWER").lower()
+        supervisor = os.getenv("SUPERVISOR")
+        pr.create_issue_comment(
+            f"Thanks @{reviewer} for the review. I will add"
+            f"a new reviewed species for you to the table when @{supervisor}"
+            "approves and merges the PR. After merging, you can upload the assembly to ENA."
+        )
+        if reviewer not in self.artifact.load_pr_data()["busy_reviewers"]:
+            print("The reviewer is not busy.")
+            sys.exit()
+        save_pr_data = self.artifact.load_pr_data()
+        save_pr_data["busy_reviewers"].remove(reviewer)
+        self.artifact.dump_pr_data(save_pr_data)
+        pr.remove_from_labels("testing")
 
 
 if __name__ == "__main__":
@@ -188,14 +198,13 @@ if __name__ == "__main__":
         help="Remove the busy reviewer from the PR.",
     )
     args = parser.parse_args()
+    EARBot = EARBotReviewer()
     if args.search:
-        EARBot = EARBotReviewer()
         EARBot.find_reviewer()
     elif args.comment:
-        EARBot = EARBotReviewer()
         EARBot.assign_reviewer()
     elif args.remove:
-        remove_reviewer()
+        EARBot.remove_reviewer()
     else:
         parser.print_help()
         sys.exit(1)
