@@ -8,7 +8,33 @@ from datetime import datetime, timedelta
 import pytz
 from github import Github
 
-cet = pytz.timezone("CET")
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "rev")))
+import get_EAR_reviewer  # type: ignore
+
+
+
+
+class EAR_get_reviewer:
+    def __init__(self) -> None:
+        url = "https://raw.githubusercontent.com/ERGA-consortium/EARs/main/rev/reviewers_list.csv"
+        csv_data = get_EAR_reviewer.download_csv(url)
+        if not csv_data:
+            raise Exception("Failed to download the CSV file.")
+        self.data = get_EAR_reviewer.parse_csv(csv_data)
+
+    def get_supervisor(self, user):
+        selected_supervisor = get_EAR_reviewer.select_random_supervisor(self.data, user)
+        if not selected_supervisor:
+            raise Exception("No eligible supervisors found.")
+        return selected_supervisor.get("Github ID")
+
+    def get_reviewer(self, institution):
+        _, top_candidates, _ = get_EAR_reviewer.select_best_reviewer(
+            self.data, institution, "ERGA-BGE"
+        )
+        if not top_candidates:
+            raise Exception("No top candidates found.")
+        return top_candidates[0].get("Github ID")
 
 
 class EARBot_artifact:
@@ -35,15 +61,7 @@ class EARBotReviewer:
         self.repo = g.get_repo(str(os.getenv("GITHUB_REPOSITORY")))
         self.pull_requests = self.repo.get_pulls(state="open")
         self.closed_pull_requests = self.repo.get_pulls(state="closed")
-        reviewers_path = os.path.join(
-            "ear_bot", os.getenv("REVIEWERS_PATH", "reviewers.txt")
-        )
-        if os.path.exists(reviewers_path):
-            with open(reviewers_path, "r") as file:
-                self.list_of_reviewers = set(map(str.lower, file.read().splitlines()))
-        else:
-            print("Missing reviewers file.")
-            sys.exit(1)
+        self.list_of_reviewers = set(map(str.lower, ...)) # add reviewers from the imported python file
         self.artifact = EARBot_artifact()
 
     def find_reviewer(self, prs=[], deadline_check=True):
@@ -54,7 +72,8 @@ class EARBotReviewer:
                 if closed_pr_number in save_pr_data["pr"]:
                     del save_pr_data["pr"][closed_pr_number]
 
-        current_date = datetime.now(tz=cet).replace(microsecond=0)
+        cet = pytz.timezone("CET")
+        current_date = datetime.now(tz=cet)
 
         if not prs:
             prs = self.pull_requests
@@ -97,8 +116,8 @@ class EARBotReviewer:
                 reviewer = random.choice(list(left_reviewers))
                 pr.create_issue_comment(
                     f"👋 Hi @{reviewer}, do you agree to review this assembly?\n\n"
-                    "Please reply to this message only with Yes or No by"
-                    f" **{current_date + timedelta(days=7)}**"
+                    "Please reply to this message only with **Yes** or **No** by"
+                    f" {(current_date + timedelta(days=7)).strftime('%d-%b-%Y at %H:%M CET')}"
                 )
                 new_reviewer = {reviewer}
             save_pr_data["pr"][pr_number] = {
@@ -136,14 +155,7 @@ class EARBotReviewer:
             print("The reviewer is not the one who was asked to review the PR.")
             sys.exit(1)
         if "yes" in comment_text:
-            supervisor_path = os.path.join(
-                "ear_bot", os.getenv("SUPERVISOR_PATH", "supervisor.txt")
-            )
-            if not os.path.exists(supervisor_path):
-                print("Missing supervisor file.")
-                sys.exit(1)
-            with open(supervisor_path, "r") as file:
-                supervisor = file.read().strip()
+            supervisor = ... # get supervisor from assignees
             pr.create_review_request([comment_author])
             pr.create_issue_comment(
                 f"Thank you @{comment_author} for agreeing 👍\n"
@@ -180,6 +192,26 @@ class EARBotReviewer:
         self.artifact.dump_pr_data(save_pr_data)
         pr.remove_from_labels("testing")
 
+    def find_supervisor(self):
+        pr_number = os.getenv("PR_NUMBER")
+        pr = self.repo.get_pull(int(pr_number))
+        EAR_reviewer = EAR_get_reviewer()
+        researcher = pr.user.login
+        supervisor = EAR_reviewer.get_supervisor(researcher)
+        try:
+            pr.add_to_labels("ERGA-BGE")
+            pr.add_to_assignees(supervisor)
+            pr.create_review_request([supervisor])
+            message = (
+                f"👋 Hi @{researcher}, thanks for sending the EAR.\n"
+                "I added the corresponding tag to the PR and appointed"
+                f"@{supervisor} as the [assignee](https://github.com/ERGA-consortium/EARs/wiki/Assignees-section) to supervise."
+            )
+            pr.create_issue_comment(message)
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            sys.exit(1)
+
 
 if __name__ == "__main__":
     parser = ArgumentParser(description="EAR bot!")
@@ -197,6 +229,11 @@ if __name__ == "__main__":
         action="store_true",
         help="Remove the busy reviewer from the PR.",
     )
+    group.add_argument(
+        "--supervisor",
+        action="store_true",
+        help="Find the supervisor and assign the ERGA-BGE label.",
+    )
     args = parser.parse_args()
     EARBot = EARBotReviewer()
     if args.search:
@@ -205,6 +242,8 @@ if __name__ == "__main__":
         EARBot.assign_reviewer()
     elif args.remove:
         EARBot.remove_reviewer()
+    elif args.supervisor:
+        EARBot.find_supervisor()
     else:
         parser.print_help()
         sys.exit(1)

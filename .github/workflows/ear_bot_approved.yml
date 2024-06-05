@@ -8,8 +8,6 @@ jobs:
   approved-changes:
     if: github.event.review.state == 'approved' && contains(github.event.pull_request.labels.*.name, 'ERGA-BGE')
     runs-on: ubuntu-latest
-    env:
-      SUPERVISOR_PATH: supervisor.txt
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -18,8 +16,10 @@ jobs:
 
       - name: Get supervisor name
         id: get_supervisor
-        run: |
-          SUPERVISOR=$(cat ear_bot/${{ env.SUPERVISOR_PATH }})
+        run: | # get the supervisor of the PR (assignee)
+          supervisor=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+          "https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}" \
+          | jq -r '.assignee.login')
           echo "supervisor=$SUPERVISOR" >> $GITHUB_OUTPUT
 
       - name: Set up Python
@@ -36,7 +36,7 @@ jobs:
           SUPERVISOR: ${{ steps.get_supervisor.outputs.supervisor }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REVIEWERS_PATH: reviewers.txt
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           python -m pip install --upgrade pip
           python -m pip install -r ear_bot/requirements.txt

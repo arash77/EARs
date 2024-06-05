@@ -24,9 +24,7 @@ jobs:
           COMMENT_TEXT: ${{ github.event.comment.body }}
           COMMENT_AUTHOR: ${{ github.event.comment.user.login }}
           PR_NUMBER: ${{ github.event.issue.number }}
-          REVIEWERS_PATH: reviewers.txt
           ARTIFACT_PATH: artifact.json
-          SUPERVISOR_PATH: supervisor.txt
         run: |
           comment_body=$(echo "${{ github.event.comment.body }}" | tr '[:upper:]' '[:lower:]')
           if [[ "${comment_body}" =~ (yes|no) ]]; then

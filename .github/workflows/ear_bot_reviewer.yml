@@ -33,7 +33,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-          REVIEWERS_PATH: reviewers.txt
           ARTIFACT_PATH: artifact.json
         run: python -u ear_bot/ear_bot_reviewer.py --search
 
