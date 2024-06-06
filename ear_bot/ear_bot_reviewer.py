@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import sys
 from argparse import ArgumentParser
 from datetime import datetime, timedelta
@@ -9,6 +10,8 @@ from github import Github
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "rev")))
 import get_EAR_reviewer  # type: ignore
+
+cet = pytz.timezone("CET")
 
 
 class EAR_get_reviewer:
@@ -41,13 +44,29 @@ class EAR_get_reviewer:
         ]
         return top_candidates
 
-    def busy_reviewer_status(self, reviewer, status):
+    def update_reviewers_list(self, **kwargs):
+        reviewer = kwargs.get("reviewer")
+        busy_status = kwargs.get("busy")
+        institution = kwargs.get("institution")
+        submitted_at = kwargs.get("submitted_at")
+        researcher = kwargs.get("researcher")
         for reviewer_data in self.data:
             if reviewer_data["Github ID"].lower() == reviewer:
-                reviewer_data["Busy"] = "Y" if status else "N"
+                reviewer_data["Busy"] = "Y" if busy_status else "N"
+                if not busy_status:
+                    reviewer_data["Calling Score"] = str(
+                        int(reviewer_data["Calling Score"]) - 1
+                    )
+                    reviewer_data["Total Reviews"] = str(
+                        int(reviewer_data["Total Reviews"]) + 1
+                    )
+                    reviewer_data["Last Review"] = submitted_at
+                    # adds 1 point to all the the IDs with the same institution than RESEARCHER
+                    # if a reviewer did not answer the call, adds 1 point to that reviewer
                 break
         else:
             raise Exception("Reviewer not found.")
+
         csv_str = ",".join(self.data[0].keys()) + "\n"
         for row in self.data:
             csv_str += ",".join(row.values()) + "\n"
@@ -95,7 +114,6 @@ class EARBotReviewer:
                         del save_pr_data["pr"][closed_pr_number]
             prs = list(self.repo.get_pulls(state="open"))
 
-        cet = pytz.timezone("CET")
         current_date = datetime.now(tz=cet)
 
         for pr in prs:
@@ -111,13 +129,10 @@ class EARBotReviewer:
                 reviewer.lower() for reviewer in pr_data.get("requested_reviewers", [])
             ]
 
-            pr_body = pr.body
-            try:
-                institution = pr_body.split("Affiliation:")[1].strip()
-                if not institution:
-                    raise Exception("Institution not found in the PR body.")
-            except Exception as e:
-                raise e
+            institution = re.search(r"Affiliation:\s*(\S+)", pr.body)
+            if not institution:
+                raise Exception("Institution not found in the PR body.")
+            institution = institution.group(1)
             list_of_reviewers = self.EAR_reviewer.get_reviewer(institution)
 
             if set(list_of_reviewers).issubset(set(old_reviewers)):
@@ -131,7 +146,7 @@ class EARBotReviewer:
                     text_to_check = "Please reply to this message"
                     if comment.user.type == "Bot" and text_to_check in comment.body:
                         comment_reviewer = (
-                            comment.body.split("Hi @")[1].split(",")[0].lower()
+                            re.search(r"@(\w+)", comment.body).group(1).lower()
                         )
                         old_reviewers.append(comment_reviewer)
                         date = comment.created_at.astimezone(cet)
@@ -188,7 +203,7 @@ class EARBotReviewer:
         for comment in pr.get_issue_comments().reversed:
             text_to_check = "Please reply to this message"
             if comment.user.type == "Bot" and text_to_check in comment.body:
-                comment_reviewer = comment.body.split("Hi @")[1].split(",")[0].lower()
+                comment_reviewer = re.search(r"@(\w+)", comment.body).group(1).lower()
                 break
         if not comment_reviewer:
             print("Missing reviewer from the comment.")
@@ -208,7 +223,7 @@ class EARBotReviewer:
                 f"Contact the PR assignee (@{supervisor}) for any issues."
             )
             pr.add_to_labels("testing")
-            self.EAR_reviewer.busy_reviewer_status(comment_author, True)
+            self.EAR_reviewer.update_reviewers_list(reviewer=comment_author, busy=True)
 
         elif "no" in comment_text:
             self.find_reviewer([pr], deadline_check=False)
@@ -229,9 +244,7 @@ class EARBotReviewer:
         for comment in pr.get_issue_comments().reversed:
             text_to_check = "for agreeing"
             if comment.user.type == "Bot" and text_to_check in comment.body:
-                comment_reviewer = (
-                    comment.body.split("Thank you @")[1].split(",")[0].lower()
-                )
+                comment_reviewer = re.search(r"@(\w+)", comment.body).group(1).lower()
                 break
         if comment_reviewer and comment_reviewer != reviewer:
             print("The reviewer is not the one who agreed to review the PR.")
@@ -241,8 +254,32 @@ class EARBotReviewer:
             f" @{supervisor} approves and merges the PR ;)\n\nCongrats on the assembly @{researcher}!\n"
             "After merging, you can [upload the assembly to ENA](https://github.com/ERGA-consortium/ERGA-submission)."
         )
+
+    def merged_pr(self):
+        pr = self.repo.get_pull(int(self.pr_number))
+        reviews = pr.get_reviews()
+        review = reviews.reversed[0]
+        for comment in pr.get_issue_comments().reversed:
+            text_to_check = "for the review"
+            if comment.user.type == "Bot" and text_to_check in comment.body:
+                comment_reviewer = re.search(r"@(\w+)", comment.body).group(1).lower()
+                for review in reviews:
+                    if review.user.login.lower() == comment_reviewer:
+                        break
+                break
+
+        reviewer = review.user.login
+        submitted_at = review.submitted_at.astimezone(cet).strftime("%Y-%m-%d")
+        institution = re.search(r"Affiliation:\s*(\S+)", pr.body).group(1)
+        researcher = pr.user.login
+        self.EAR_reviewer.update_reviewers_list(
+            reviewer=reviewer,
+            busy=False,
+            institution=institution,
+            submitted_at=submitted_at,
+            researcher=researcher,
+        )
         pr.remove_from_labels("testing")
-        self.EAR_reviewer.busy_reviewer_status(reviewer, False)
 
     def find_supervisor(self):
         pr = self.repo.get_pull(int(self.pr_number))
@@ -284,6 +321,11 @@ if __name__ == "__main__":
         action="store_true",
         help="Find the supervisor and assign the ERGA-BGE label.",
     )
+    group.add_argument(
+        "--merged",
+        action="store_true",
+        help="Remove the testing label and update the reviewer status.",
+    )
     args = parser.parse_args()
     EARBot = EARBotReviewer()
     if args.search:
@@ -294,6 +336,8 @@ if __name__ == "__main__":
         EARBot.remove_reviewer()
     elif args.supervisor:
         EARBot.find_supervisor()
+    elif args.merged:
+        EARBot.merged_pr()
     else:
         parser.print_help()
         sys.exit(1)
