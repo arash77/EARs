@@ -163,6 +163,7 @@ class EARBotReviewer:
                     for reviewer in list_of_reviewers
                     if reviewer not in old_reviewers
                     and reviewer != pr.user.login.lower()
+                    and reviewer != pr.assignee.login.lower()
                 )
                 pr.create_issue_comment(
                     f"👋 Hi @{new_reviewer}, do you agree to review this assembly?\n"
@@ -181,9 +182,9 @@ class EARBotReviewer:
         if len(pr.requested_reviewers) > 1:
             print("The PR is already assigned to a reviewer.")
             sys.exit()
-        # if pr.get_reviews().totalCount > 0:
-        #     print("The PR already has a review.")
-        #     sys.exit()
+        if pr.get_reviews().totalCount > 0:
+            print("The PR already has a review.")
+            sys.exit()
         if comment_author in map(
             str.lower, [rr.login for rr in pr.requested_reviewers]
         ):
