@@ -178,6 +178,9 @@ class EARBotReviewer:
         if len(pr.requested_reviewers) > 1:
             print("The PR is already assigned to a reviewer.")
             sys.exit()
+        if len(pr.get_reviews()) > 0:
+            print("The PR already has a review.")
+            sys.exit()
         if comment_author in map(
             str.lower, [rr.login for rr in pr.requested_reviewers]
         ):
