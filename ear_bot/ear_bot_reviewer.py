@@ -159,7 +159,7 @@ class EARBotReviewer:
                 new_reviewer = next(
                     reviewer
                     for reviewer in list_of_reviewers
-                    if reviewer not in old_reviewers
+                    if reviewer not in old_reviewers and reviewer != pr.user.login.lower()
                 )
                 pr.create_issue_comment(
                     f"👋 Hi @{new_reviewer}, do you agree to review this assembly?\n"
