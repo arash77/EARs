@@ -16,9 +16,10 @@ cet = pytz.timezone("CET")
 
 class EAR_get_reviewer:
     def __init__(self) -> None:
-        self.csv_file = os.path.abspath(
-            os.path.join(os.path.dirname(__file__), "..", "rev", "reviewers_list.csv")
+        self.csv_folder = os.path.abspath(
+            os.path.join(os.path.dirname(__file__), "..", "rev")
         )
+        self.csv_file = os.path.join(self.csv_folder, "reviewers_list.csv")
         if not os.path.exists(self.csv_file):
             raise Exception("The CSV file does not exist.")
         with open(self.csv_file, "r") as file:
@@ -44,16 +45,25 @@ class EAR_get_reviewer:
         ]
         return top_candidates
 
-    def update_reviewers_list(self, **kwargs):
-        reviewer = kwargs.get("reviewer")
-        busy_status = kwargs.get("busy")
-        institution = kwargs.get("institution")
-        submitted_at = kwargs.get("submitted_at")
-        researcher = kwargs.get("researcher")
+    def add_pr(self, name, institution, species, pr):
+        ear_reviews_csv_file = os.path.join(self.csv_folder, "EAR_reviews.csv")
+        if not os.path.exists(ear_reviews_csv_file):
+            raise Exception("The EAR reviews CSV file does not exist.")
+        with open(ear_reviews_csv_file, "a") as file:
+            file.write(f"{name},{institution},{species},{pr}\n")
+
+    def update_reviewers_list(
+        self,
+        reviewer,
+        busy,
+        institution=None,
+        submitted_at=None,
+        old_reviewer=[],
+    ):
         for reviewer_data in self.data:
             if reviewer_data["Github ID"].lower() == reviewer:
-                reviewer_data["Busy"] = "Y" if busy_status else "N"
-                if not busy_status:
+                reviewer_data["Busy"] = "Y" if busy else "N"
+                if submitted_at:
                     reviewer_data["Calling Score"] = str(
                         int(reviewer_data["Calling Score"]) - 1
                     )
@@ -61,9 +71,16 @@ class EAR_get_reviewer:
                         int(reviewer_data["Total Reviews"]) + 1
                     )
                     reviewer_data["Last Review"] = submitted_at
-                    # adds 1 point to all the the IDs with the same institution than RESEARCHER
-                    # if a reviewer did not answer the call, adds 1 point to that reviewer
-                break
+                else:
+                    break
+            elif reviewer_data["Github ID"].lower() in old_reviewer:
+                reviewer_data["Calling Score"] = str(
+                    int(reviewer_data["Calling Score"]) + 1
+                )
+            if reviewer_data["Institution"].lower() == institution.lower():
+                reviewer_data["Calling Score"] = str(
+                    int(reviewer_data["Calling Score"]) + 1
+                )
         else:
             raise Exception("Reviewer not found.")
 
@@ -163,11 +180,14 @@ class EARBotReviewer:
                     pr.create_issue_comment(
                         "Ok thank you, I will look for the next reviewer on the list :)"
                     )
-                new_reviewer = [
-                    reviewer
-                    for reviewer in list_of_reviewers
-                    if reviewer not in old_reviewers
-                ][0]
+                new_reviewer = next(
+                    (
+                        reviewer
+                        for reviewer in list_of_reviewers
+                        if reviewer not in old_reviewers
+                    ),
+                    None,
+                )
                 pr.create_issue_comment(
                     f"👋 Hi @{new_reviewer}, do you agree to review this assembly?\n"
                     "Please reply to this message only with **Yes** or **No** by"
@@ -258,27 +278,41 @@ class EARBotReviewer:
     def merged_pr(self):
         pr = self.repo.get_pull(int(self.pr_number))
         reviews = pr.get_reviews()
-        review = reviews.reversed[0]
+        review = next(reversed(reviews))
+        old_reviewer = []
         for comment in pr.get_issue_comments().reversed:
             text_to_check = "for the review"
             if comment.user.type == "Bot" and text_to_check in comment.body:
                 comment_reviewer = re.search(r"@(\w+)", comment.body).group(1).lower()
-                for review in reviews:
-                    if review.user.login.lower() == comment_reviewer:
-                        break
+                if any(
+                    review.user.login.lower() == comment_reviewer for review in reviews
+                ):
+                    break
+
+            text_to_check2 = "Please reply to this message"
+            if comment.user.type == "Bot" and text_to_check2 in comment.body:
+                comment_reviewer = re.search(r"@(\w+)", comment.body).group(1).lower()
+                old_reviewer.append(comment_reviewer)
                 break
 
         reviewer = review.user.login
         submitted_at = review.submitted_at.astimezone(cet).strftime("%Y-%m-%d")
         institution = re.search(r"Affiliation:\s*(\S+)", pr.body).group(1)
-        researcher = pr.user.login
+
         self.EAR_reviewer.update_reviewers_list(
             reviewer=reviewer,
             busy=False,
             institution=institution,
             submitted_at=submitted_at,
-            researcher=researcher,
+            old_reviewer=old_reviewer,
         )
+        name = next(
+            entry["Full Name"]
+            for entry in self.EAR_reviewer.data
+            if entry["Github ID"].lower() == reviewer
+        )
+        species = re.search(r"Species:\s*(.+)", pr.body).group(1).strip()
+        self.EAR_reviewer.add_pr(name, institution, species, pr)
         pr.remove_from_labels("testing")
 
     def find_supervisor(self):
