@@ -28,7 +28,7 @@ jobs:
         with:
           python-version: "3.10"
 
-      - name: Remove reviewer from the busy reviewers
+      - name: Thanks the reviewer for the approval
         if: github.event.review.user.login != steps.get_supervisor.outputs.supervisor
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
