@@ -155,8 +155,6 @@ class EARBotReviewer:
             if set(list_of_reviewers).issubset(set(old_reviewers)):
                 old_reviewers.clear()
 
-            date = pr_data.get("date", current_date)
-
             assign_new_reviewer = False if deadline_check else True
             if deadline_check:
                 for comment in pr.get_issue_comments().reversed:
@@ -194,7 +192,6 @@ class EARBotReviewer:
                     f" {(current_date + timedelta(days=7)).strftime('%d-%b-%Y at %H:%M CET')}"
                 )
             save_pr_data["pr"][pr_number] = {
-                "date": date,
                 "requested_reviewers": (
                     old_reviewers + ([new_reviewer] if new_reviewer else [])
                 ),
