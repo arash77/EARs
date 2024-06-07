@@ -233,7 +233,7 @@ class EARBotReviewer:
             print("Invalid comment text.")
             sys.exit(1)
 
-    def remove_reviewer(self):
+    def approve_reviewer(self):
         pr = self.repo.get_pull(int(self.pr_number))
         try:
             reviewer = self.reviewer.lower()
@@ -340,9 +340,9 @@ if __name__ == "__main__":
         help="Assign the reviewer to the PR when the reviewer agrees.",
     )
     group.add_argument(
-        "--remove",
+        "--approve",
         action="store_true",
-        help="Remove the busy reviewer from the PR.",
+        help="Thanks the reviewer."
     )
     group.add_argument(
         "--supervisor",
@@ -360,8 +360,8 @@ if __name__ == "__main__":
         EARBot.find_reviewer()
     elif args.comment:
         EARBot.assign_reviewer()
-    elif args.remove:
-        EARBot.remove_reviewer()
+    elif args.approve:
+        EARBot.approve_reviewer()
     elif args.supervisor:
         EARBot.find_supervisor()
     elif args.merged:
