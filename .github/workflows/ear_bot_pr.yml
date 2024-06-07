@@ -2,7 +2,7 @@ name: The EARs Reviewing bot for PRs
 
 on:
   pull_request_target:
-    types: [opened]
+    types: [opened, reopened, synchronize]
     paths:
       - "**.pdf"
 
