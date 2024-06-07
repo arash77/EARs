@@ -2,7 +2,6 @@ name: The EARs Reviewing bot on merge
 
 on:
   pull_request_target:
-    branches: [main]
     types: [closed]
 
 jobs:
