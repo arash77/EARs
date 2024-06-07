@@ -140,6 +140,12 @@ class EARBotReviewer:
 
             institution = institution.group(1)
             list_of_reviewers = self.EAR_reviewer.get_reviewer(institution)
+            list_of_reviewers = [
+                reviewer
+                for reviewer in list_of_reviewers
+                if reviewer != pr.user.login.lower()
+                and reviewer != pr.assignee.login.lower()
+            ]
 
             if set(list_of_reviewers).issubset(old_reviewers):
                 old_reviewers.clear()
@@ -158,18 +164,22 @@ class EARBotReviewer:
             if not old_reviewers:
                 assign_new_reviewer = True
             if assign_new_reviewer:
-                new_reviewer = next(
-                    reviewer
-                    for reviewer in list_of_reviewers
-                    if reviewer not in old_reviewers
-                    and reviewer != pr.user.login.lower()
-                    and reviewer != pr.assignee.login.lower()
-                )
-                pr.create_issue_comment(
-                    f"👋 Hi @{new_reviewer}, do you agree to review this assembly?\n"
-                    "Please reply to this message only with **Yes** or **No** by"
-                    f" {(current_date + timedelta(days=7)).strftime('%d-%b-%Y at %H:%M CET')}"
-                )
+                try:
+                    new_reviewer = next(
+                        reviewer
+                        for reviewer in list_of_reviewers
+                        if reviewer not in old_reviewers
+                    )
+                    pr.create_issue_comment(
+                        f"👋 Hi @{new_reviewer}, do you agree to review this assembly?\n"
+                        "Please reply to this message only with **Yes** or **No** by"
+                        f" {(current_date + timedelta(days=7)).strftime('%d-%b-%Y at %H:%M CET')}"
+                    )
+                except:
+                    supervisor = pr.assignee.login
+                    pr.create_issue_comment(
+                        f"No more reviewers available at the moment. @{supervisor} will assign a reviewer."
+                    )
 
     def assign_reviewer(self):
         try:
