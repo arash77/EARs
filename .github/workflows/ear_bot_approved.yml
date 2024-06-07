@@ -33,7 +33,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-          ARTIFACT_PATH: ear_bot/artifact.json
           PR_NUMBER: ${{ github.event.pull_request.number }}
           REVIEWER: ${{ github.event.review.user.login }}
           SUPERVISOR: ${{ steps.get_supervisor.outputs.supervisor }}
@@ -41,9 +40,3 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r ear_bot/requirements.txt
           python -u ear_bot/ear_bot_reviewer.py --remove
-
-      - name: Uplaod artifact.json
-        if: github.event.review.user.login != steps.get_supervisor.outputs.supervisor
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          file_pattern: "ear_bot/artifact.json"

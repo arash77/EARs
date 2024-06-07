@@ -30,3 +30,9 @@ jobs:
           python -m pip install -r ear_bot/requirements.txt
           python -u ear_bot/ear_bot_reviewer.py --merge
 
+      - name: Uplaod csv file
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          file_pattern: "rev/*.csv"
+
+

@@ -21,7 +21,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-          ARTIFACT_PATH: ear_bot/artifact.json
           PR_NUMBER: ${{ github.event.issue.number }}
           COMMENT_TEXT: ${{ github.event.comment.body }}
           COMMENT_AUTHOR: ${{ github.event.comment.user.login }}
@@ -36,7 +35,7 @@ jobs:
             echo "Skipping job as COMMENT TEXT is not 'YES' or 'NO'"
           fi
 
-      - name: Uplaod artifact.json
+      - name: Uplaod csv file
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          file_pattern: "ear_bot/artifact.json"
+          file_pattern: "rev/*.csv"

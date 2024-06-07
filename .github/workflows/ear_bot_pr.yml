@@ -27,6 +27,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-          ARTIFACT_PATH: ear_bot/artifact.json
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: python -u ear_bot/ear_bot_reviewer.py --supervisor
