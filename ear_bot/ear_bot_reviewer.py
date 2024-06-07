@@ -76,7 +76,10 @@ class EAR_get_reviewer:
                 reviewer_data["Calling Score"] = str(
                     int(reviewer_data["Calling Score"]) + 1
                 )
-            if institution and reviewer_data["Institution"].lower() == institution.lower():
+            if (
+                institution
+                and reviewer_data["Institution"].lower() == institution.lower()
+            ):
                 reviewer_data["Calling Score"] = str(
                     int(reviewer_data["Calling Score"]) + 1
                 )
@@ -159,7 +162,8 @@ class EARBotReviewer:
                 new_reviewer = next(
                     reviewer
                     for reviewer in list_of_reviewers
-                    if reviewer not in old_reviewers and reviewer != pr.user.login.lower()
+                    if reviewer not in old_reviewers
+                    and reviewer != pr.user.login.lower()
                 )
                 pr.create_issue_comment(
                     f"👋 Hi @{new_reviewer}, do you agree to review this assembly?\n"
