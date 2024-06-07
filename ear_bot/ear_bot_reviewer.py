@@ -1,4 +1,3 @@
-import json
 import os
 import re
 import sys
@@ -58,7 +57,7 @@ class EAR_get_reviewer:
         busy,
         institution=None,
         submitted_at=None,
-        old_reviewer=[],
+        old_reviewers=[],
     ):
         for reviewer_data in self.data:
             if reviewer_data["Github ID"].lower() == reviewer:
@@ -73,11 +72,11 @@ class EAR_get_reviewer:
                     reviewer_data["Last Review"] = submitted_at
                 else:
                     break
-            elif reviewer_data["Github ID"].lower() in old_reviewer:
+            elif reviewer_data["Github ID"].lower() in old_reviewers:
                 reviewer_data["Calling Score"] = str(
                     int(reviewer_data["Calling Score"]) + 1
                 )
-            if reviewer_data["Institution"].lower() == institution.lower():
+            if institution and reviewer_data["Institution"].lower() == institution.lower():
                 reviewer_data["Calling Score"] = str(
                     int(reviewer_data["Calling Score"]) + 1
                 )
@@ -91,44 +90,18 @@ class EAR_get_reviewer:
             file.write(csv_str)
 
 
-class EARBot_artifact:
-    def __init__(self, artifact_path) -> None:
-        self.artifact_path = artifact_path
-
-    def load_pr_data(self):
-        save_pr_data = {"pr": {}}
-        if os.path.exists(self.artifact_path):
-            with open(self.artifact_path, "r") as file:
-                save_pr_data = json.load(file)
-        return save_pr_data
-
-    def dump_pr_data(self, save_pr_data):
-        with open(self.artifact_path, "w") as file:
-            json.dump(save_pr_data, file, indent=4, default=str)
-
-
 class EARBotReviewer:
     def __init__(self) -> None:
         g = Github(os.getenv("GITHUB_TOKEN"))
         self.repo = g.get_repo(str(os.getenv("GITHUB_REPOSITORY")))
         self.EAR_reviewer = EAR_get_reviewer()
-        self.artifact = EARBot_artifact(
-            os.getenv("ARTIFACT_PATH", "ear_bot/artifact.json")
-        )
         self.pr_number = os.getenv("PR_NUMBER")
         self.comment_text = os.getenv("COMMENT_TEXT")
         self.comment_author = os.getenv("COMMENT_AUTHOR")
         self.reviewer = os.getenv("REVIEWER")
 
     def find_reviewer(self, prs=[], deadline_check=True):
-        save_pr_data = self.artifact.load_pr_data()
-
         if not prs:
-            if save_pr_data.get("pr"):
-                for closed_pr in self.repo.get_pulls(state="closed"):
-                    closed_pr_number = str(closed_pr.number)
-                    if closed_pr_number in save_pr_data["pr"]:
-                        del save_pr_data["pr"][closed_pr_number]
             prs = list(self.repo.get_pulls(state="open"))
 
         current_date = datetime.now(tz=cet)
@@ -140,67 +113,59 @@ class EARBotReviewer:
                 or pr.get_reviews().totalCount > 0
             ):
                 continue
-            pr_number = str(pr.number)
-            pr_data = save_pr_data["pr"].get(pr_number, {})
-            old_reviewers = [
-                reviewer.lower() for reviewer in pr_data.get("requested_reviewers", [])
-            ]
+            old_reviewers = []
+            deadline_passed = False
+            for comment in pr.get_issue_comments().reversed:
+                text_to_check = "Please reply to this message"
+                if comment.user.type == "Bot" and text_to_check in comment.body:
+                    comment_reviewer = (
+                        re.search(r"@(\w+)", comment.body).group(1).lower()
+                    )
+                    if not old_reviewers:
+                        last_comment_date = comment.created_at.astimezone(cet)
+                        deadline_passed = (
+                            last_comment_date + timedelta(days=7) < current_date
+                        )
+                    old_reviewers.append(comment_reviewer)
 
             institution = re.search(r"Affiliation:\s*(\S+)", pr.body)
-            if not institution:
-                raise Exception("Institution not found in the PR body.")
+            species = re.search(r"Species:\s*(.+)", pr.body)
+            if not institution or not species:
+                pr.create_issue_comment(
+                    "Missing affiliation or species in the PR description."
+                )
+                continue
+
             institution = institution.group(1)
             list_of_reviewers = self.EAR_reviewer.get_reviewer(institution)
 
             if set(list_of_reviewers).issubset(set(old_reviewers)):
                 old_reviewers.clear()
 
-            date = pr_data.get("date", current_date)
-
-            assign_new_reviewer = False if deadline_check else True
-            if deadline_check:
-                for comment in pr.get_issue_comments().reversed:
-                    text_to_check = "Please reply to this message"
-                    if comment.user.type == "Bot" and text_to_check in comment.body:
-                        comment_reviewer = (
-                            re.search(r"@(\w+)", comment.body).group(1).lower()
-                        )
-                        old_reviewers.append(comment_reviewer)
-                        date = comment.created_at.astimezone(cet)
-                        if date + timedelta(days=7) < current_date:
-                            assign_new_reviewer = True
-                            pr.create_issue_comment(
-                                "Time is out! I will look for the next reviewer on the list :)"
-                            )
-                        break
-
-            new_reviewer = None
+            assign_new_reviewer = False
+            if deadline_passed:
+                assign_new_reviewer = True
+                pr.create_issue_comment(
+                    "Time is out! I will look for the next reviewer on the list :)"
+                )
+            if not deadline_check:
+                assign_new_reviewer = True
+                pr.create_issue_comment(
+                    "Ok thank you, I will look for the next reviewer on the list :)"
+                )
+            if not old_reviewers:
+                assign_new_reviewer = True
             if assign_new_reviewer:
-                if not deadline_check:
-                    pr.create_issue_comment(
-                        "Ok thank you, I will look for the next reviewer on the list :)"
-                    )
                 new_reviewer = next(
-                    (
-                        reviewer
-                        for reviewer in list_of_reviewers
-                        if reviewer not in old_reviewers
-                    ),
-                    None,
+                    reviewer
+                    for reviewer in list_of_reviewers
+                    if reviewer not in old_reviewers and reviewer != pr.user.login.lower()
                 )
                 pr.create_issue_comment(
                     f"👋 Hi @{new_reviewer}, do you agree to review this assembly?\n"
                     "Please reply to this message only with **Yes** or **No** by"
                     f" {(current_date + timedelta(days=7)).strftime('%d-%b-%Y at %H:%M CET')}"
                 )
-            save_pr_data["pr"][pr_number] = {
-                "date": date,
-                "requested_reviewers": (
-                    old_reviewers + ([new_reviewer] if new_reviewer else [])
-                ),
-            }
-
-        self.artifact.dump_pr_data(save_pr_data)
 
     def assign_reviewer(self):
         try:
@@ -279,7 +244,7 @@ class EARBotReviewer:
         pr = self.repo.get_pull(int(self.pr_number))
         reviews = pr.get_reviews()
         review = next(reversed(reviews))
-        old_reviewer = []
+        old_reviewers = []
         for comment in pr.get_issue_comments().reversed:
             text_to_check = "for the review"
             if comment.user.type == "Bot" and text_to_check in comment.body:
@@ -292,7 +257,7 @@ class EARBotReviewer:
             text_to_check2 = "Please reply to this message"
             if comment.user.type == "Bot" and text_to_check2 in comment.body:
                 comment_reviewer = re.search(r"@(\w+)", comment.body).group(1).lower()
-                old_reviewer.append(comment_reviewer)
+                old_reviewers.append(comment_reviewer)
                 break
 
         reviewer = review.user.login
@@ -304,7 +269,7 @@ class EARBotReviewer:
             busy=False,
             institution=institution,
             submitted_at=submitted_at,
-            old_reviewer=old_reviewer,
+            old_reviewers=old_reviewers,
         )
         name = next(
             entry["Full Name"]

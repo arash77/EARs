@@ -9,6 +9,8 @@ on:
   schedule:
     - cron: "0 */12 * * *"
 
+  workflow_dispatch:
+
 jobs:
   comment-reviewer:
     runs-on: ubuntu-latest
@@ -33,10 +35,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-          ARTIFACT_PATH: ear_bot/artifact.json
         run: python -u ear_bot/ear_bot_reviewer.py --search
-
-      - name: Uplaod artifact.json
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          file_pattern: "ear_bot/artifact.json"
