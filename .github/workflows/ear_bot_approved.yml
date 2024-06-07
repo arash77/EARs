@@ -8,11 +8,12 @@ jobs:
   approved-changes:
     if: github.event.review.state == 'approved' && contains(github.event.pull_request.labels.*.name, 'ERGA-BGE')
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          ref: "main"
 
       - name: Get supervisor name
         id: get_supervisor
