@@ -76,7 +76,7 @@ class EAR_get_reviewer:
                 reviewer_data["Calling Score"] = str(
                     int(reviewer_data["Calling Score"]) + 1
                 )
-            if reviewer_data["Institution"].lower() == institution.lower():
+            if institution and reviewer_data["Institution"].lower() == institution.lower():
                 reviewer_data["Calling Score"] = str(
                     int(reviewer_data["Calling Score"]) + 1
                 )
