@@ -40,7 +40,8 @@ class EAR_get_reviewer:
         if not all_eligible_candidates:
             raise Exception("No eligible candidates found.")
         top_candidates = [
-            candidate.get("Github ID").lower() for candidate in all_eligible_candidates
+            candidate.get("Github ID", "").lower()
+            for candidate in all_eligible_candidates
         ]
         return top_candidates
 
@@ -57,34 +58,32 @@ class EAR_get_reviewer:
         busy,
         institution=None,
         submitted_at=None,
-        old_reviewers=[],
+        old_reviewers=set(),
     ):
         for reviewer_data in self.data:
-            if reviewer_data["Github ID"].lower() == reviewer:
+            if reviewer_data.get("Github ID", "").lower() == reviewer:
                 reviewer_data["Busy"] = "Y" if busy else "N"
                 if submitted_at:
                     reviewer_data["Calling Score"] = str(
-                        int(reviewer_data["Calling Score"]) - 1
+                        int(reviewer_data.get("Calling Score", 1000)) - 1
                     )
                     reviewer_data["Total Reviews"] = str(
-                        int(reviewer_data["Total Reviews"]) + 1
+                        int(reviewer_data.get("Total Reviews", 1000)) + 1
                     )
                     reviewer_data["Last Review"] = submitted_at
                 else:
                     break
-            elif reviewer_data["Github ID"].lower() in old_reviewers:
+            elif reviewer_data.get("Github ID", "").lower() in old_reviewers:
                 reviewer_data["Calling Score"] = str(
-                    int(reviewer_data["Calling Score"]) + 1
+                    int(reviewer_data.get("Calling Score", 1000)) + 1
                 )
             if (
                 institution
-                and reviewer_data["Institution"].lower() == institution.lower()
+                and reviewer_data.get("Institution", "").lower() == institution.lower()
             ):
                 reviewer_data["Calling Score"] = str(
-                    int(reviewer_data["Calling Score"]) + 1
+                    int(reviewer_data.get("Calling Score", 1000)) + 1
                 )
-        else:
-            raise Exception("Reviewer not found.")
 
         csv_str = ",".join(self.data[0].keys()) + "\n"
         for row in self.data:
@@ -116,7 +115,7 @@ class EARBotReviewer:
                 or pr.get_reviews().totalCount > 0
             ):
                 continue
-            old_reviewers = []
+            old_reviewers = set()
             deadline_passed = False
             for comment in pr.get_issue_comments().reversed:
                 text_to_check = "Please reply to this message"
@@ -129,7 +128,7 @@ class EARBotReviewer:
                         deadline_passed = (
                             last_comment_date + timedelta(days=7) < current_date
                         )
-                    old_reviewers.append(comment_reviewer)
+                    old_reviewers.add(comment_reviewer)
 
             institution = re.search(r"Affiliation:\s*(\S+)", pr.body)
             species = re.search(r"Species:\s*(.+)", pr.body)
@@ -142,7 +141,7 @@ class EARBotReviewer:
             institution = institution.group(1)
             list_of_reviewers = self.EAR_reviewer.get_reviewer(institution)
 
-            if set(list_of_reviewers).issubset(set(old_reviewers)):
+            if set(list_of_reviewers).issubset(old_reviewers):
                 old_reviewers.clear()
 
             assign_new_reviewer = False
@@ -249,26 +248,30 @@ class EARBotReviewer:
 
     def merged_pr(self):
         pr = self.repo.get_pull(int(self.pr_number))
-        reviews = pr.get_reviews()
-        review = next(reversed(reviews))
-        old_reviewers = []
-        for comment in pr.get_issue_comments().reversed:
+        reviews = pr.get_reviews().reversed
+        comments = pr.get_issue_comments().reversed
+        for comment in comments:
             text_to_check = "for the review"
             if comment.user.type == "Bot" and text_to_check in comment.body:
                 comment_reviewer = re.search(r"@(\w+)", comment.body).group(1).lower()
-                if any(
-                    review.user.login.lower() == comment_reviewer for review in reviews
-                ):
-                    break
-
-            text_to_check2 = "Please reply to this message"
-            if comment.user.type == "Bot" and text_to_check2 in comment.body:
-                comment_reviewer = re.search(r"@(\w+)", comment.body).group(1).lower()
-                old_reviewers.append(comment_reviewer)
+                the_review = next(
+                    review
+                    for review in reviews
+                    if review.user.login.lower() == comment_reviewer
+                )
                 break
+        else:
+            the_review = reviews[0]
 
-        reviewer = review.user.login
-        submitted_at = review.submitted_at.astimezone(cet).strftime("%Y-%m-%d")
+        old_reviewers = set()
+        for comment in comments:
+            text_to_check = "Please reply to this message"
+            if comment.user.type == "Bot" and text_to_check in comment.body:
+                comment_reviewer = re.search(r"@(\w+)", comment.body).group(1).lower()
+                old_reviewers.add(comment_reviewer)
+
+        reviewer = the_review.user.login.lower()
+        submitted_at = the_review.submitted_at.astimezone(cet).strftime("%Y-%m-%d")
         institution = re.search(r"Affiliation:\s*(\S+)", pr.body).group(1)
 
         self.EAR_reviewer.update_reviewers_list(
@@ -279,13 +282,21 @@ class EARBotReviewer:
             old_reviewers=old_reviewers,
         )
         name = next(
-            entry["Full Name"]
-            for entry in self.EAR_reviewer.data
-            if entry["Github ID"].lower() == reviewer
+            (
+                entry["Full Name"]
+                for entry in self.EAR_reviewer.data
+                if entry.get("Github ID", "").lower() == reviewer
+            ),
+            the_review.user.name or the_review.user.login,
         )
+
         species = re.search(r"Species:\s*(.+)", pr.body).group(1).strip()
-        self.EAR_reviewer.add_pr(name, institution, species, pr)
-        pr.remove_from_labels("testing")
+        self.EAR_reviewer.add_pr(name, institution, species, pr.html_url)
+        (
+            pr.remove_from_labels("testing")
+            if "testing" in [label.name for label in pr.get_labels()]
+            else None
+        )
 
     def find_supervisor(self):
         pr = self.repo.get_pull(int(self.pr_number))
