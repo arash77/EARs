@@ -241,6 +241,9 @@ class EARBotReviewer:
             print(f"Missing required environment variables.\n{e}")
             sys.exit(1)
         supervisor = pr.assignee.login
+        if reviewer == supervisor:
+            print("The reviewer is the same as the supervisor, don't need to do anything.")
+            sys.exit()
         researcher = pr.user.login
         comment_reviewer = None
         for comment in pr.get_issue_comments().reversed:
