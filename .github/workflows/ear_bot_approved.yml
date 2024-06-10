@@ -19,10 +19,9 @@ jobs:
           REVIEWER: ${{ github.event.review.user.login }}
           should_run: ${{ github.event.review.state == 'approved' && contains(github.event.pull_request.labels.*.name, 'ERGA-BGE') }}
         run: |
-          mkdir -p ./pr
-          echo "PR_NUMBER=$PR_NUMBER" > ./pr/pr_status
-          echo "REVIEWER=$REVIEWER" >> ./pr/pr_status
-          echo "SHOULD_RUN=$should_run" >> ./pr/pr_status
+          echo "PR_NUMBER=$PR_NUMBER" > pr_status
+          echo "REVIEWER=$REVIEWER" >> pr_status
+          echo "SHOULD_RUN=$should_run" >> pr_status
       - uses: actions/upload-artifact@v4
         with:
-          path: ./pr/pr_status
+          path: pr_status

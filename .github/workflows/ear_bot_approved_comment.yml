@@ -16,10 +16,10 @@ jobs:
 
       - uses: actions/download-artifact@v4
         with:
-          path: ./pr/pr_status
+          path: pr_status
 
       - run: |
-          source ./pr/pr_status
+          source pr_status
           echo "PR_NUMBER=${PR_NUMBER}" >> $GITHUB_ENV
           echo "REVIEWER=${REVIEWER}" >> $GITHUB_ENV
           echo "SHOULD_RUN=${SHOULD_RUN}" >> $GITHUB_ENV
