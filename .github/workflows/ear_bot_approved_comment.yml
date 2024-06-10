@@ -14,19 +14,45 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - uses: actions/download-artifact@v4
+      - name: "Download artifact"
+        uses: actions/github-script@v6
         with:
-          path: pr_status
-          name: pr_status
+          script: |
+            let allArtifacts = await github.rest.actions.listWorkflowRunArtifacts({
+               owner: context.repo.owner,
+               repo: context.repo.repo,
+               run_id: context.payload.workflow_run.id,
+            });
+            let matchArtifact = allArtifacts.data.artifacts.filter((artifact) => {
+              return artifact.name == "pr_status"
+            })[0];
+            let download = await github.rest.actions.downloadArtifact({
+               owner: context.repo.owner,
+               repo: context.repo.repo,
+               artifact_id: matchArtifact.id,
+               archive_format: 'zip',
+            });
+            let fs = require('fs');
+            fs.writeFileSync(`${process.env.GITHUB_WORKSPACE}/pr_status.zip`, Buffer.from(download.data));
 
-      - name: Display structure of downloaded files
-        run: ls -R pr_status
+      - name: "Unzip artifact"
+        run: unzip pr_status.zip
 
-      - run: |
-          source pr_status
-          echo "PR_NUMBER=${PR_NUMBER}" >> $GITHUB_ENV
-          echo "REVIEWER=${REVIEWER}" >> $GITHUB_ENV
-          echo "SHOULD_RUN=${SHOULD_RUN}" >> $GITHUB_ENV
+      - name: "Save artifact to env"
+        uses: actions/github-script@v6
+        with:
+          script: |
+            let fs = require('fs');
+            let pr_status = fs.readFileSync('pr_status', 'utf8').split('\n');
+            core.exportVariable('PR_NUMBER', pr_status[0].split('=')[1]);
+            core.exportVariable('REVIEWER', pr_status[1].split('=')[1]);
+            core.exportVariable('SHOULD_RUN', pr_status[2].split('=')[1]);
+
+      - name: Save artifact to env
+        run: |
+          echo "PR_NUMBER=$(cat pr_status | grep PR_NUMBER | cut -d'=' -f2)" >> $GITHUB_ENV
+          echo "REVIEWER=$(cat pr_status | grep REVIEWER | cut -d'=' -f2)" >> $GITHUB_ENV
+          echo "SHOULD_RUN=$(cat pr_status | grep SHOULD_RUN | cut -d'=' -f2)" >> $GITHUB_ENV
 
       - name: Set up Python
         if: ${{ env.SHOULD_RUN == 'true' }}
