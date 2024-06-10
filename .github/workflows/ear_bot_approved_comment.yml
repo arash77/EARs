@@ -19,7 +19,7 @@ jobs:
           path: ./pr/pr_status
 
       - run: |
-          source review-data.txt
+          source ./pr/pr_status
           echo "PR_NUMBER=${PR_NUMBER}" >> $GITHUB_ENV
           echo "REVIEWER=${REVIEWER}" >> $GITHUB_ENV
           echo "SHOULD_RUN=${SHOULD_RUN}" >> $GITHUB_ENV
