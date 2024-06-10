@@ -14,26 +14,23 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: pr_status
+          path: pr_status.zip
+
       - name: Download artifact and extract the data
         run: |
-          artifact_id=$(curl -sS -X GET \
-          -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-          "https://api.github.com/repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts" \
-          | jq -r '.artifacts[] | select(.name == "pr_status") | .id')
-          curl -sS -X GET \
-          -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-          -o pr_status.zip \
-          "https://api.github.com/repos/${{ github.repository }}/actions/artifacts/${artifact_id}/zip"
-
           unzip pr_status.zip
 
           PR_NUMBER=$(grep PR_NUMBER pr_status | cut -d'=' -f2)
           REVIEWER=$(grep REVIEWER pr_status | cut -d'=' -f2)
           SHOULD_RUN=$(grep SHOULD_RUN pr_status | cut -d'=' -f2)
 
-          echo "PR_NUMBER=${PR_NUMBER}" >> $GITHUB_ENV
-          echo "REVIEWER=${REVIEWER}" >> $GITHUB_ENV
-          echo "SHOULD_RUN=${SHOULD_RUN}" >> $GITHUB_ENV
+          echo "::set-env name=PR_NUMBER::${PR_NUMBER}"
+          echo "::set-env name=REVIEWER::${REVIEWER}"
+          echo "::set-env name=SHOULD_RUN::${SHOULD_RUN}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
