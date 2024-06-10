@@ -17,6 +17,10 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           path: pr_status
+          name: pr_status
+
+      - name: Display structure of downloaded files
+        run: ls -R pr_status
 
       - run: |
           source pr_status
