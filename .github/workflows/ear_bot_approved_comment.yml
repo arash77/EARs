@@ -14,7 +14,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download artifact and extract the data
+      - name: Download artifact
         uses: actions/github-script@v6
         with:
           script: |
@@ -34,14 +34,25 @@ jobs:
             });
             let fs = require('fs');
             fs.writeFileSync(`${process.env.GITHUB_WORKSPACE}/pr_status.zip`, Buffer.from(download.data));
-            fs.createReadStream('pr_status.zip').pipe(require('unzip').Extract({ path: process.env.GITHUB_WORKSPACE })).on('close', () => {
-                let pr_status = fs.readFileSync(`${process.env.GITHUB_WORKSPACE}/pr_status`, 'utf8').split('\n');
-                process.env.PR_NUMBER = pr_status[0].split('=')[1];
-                process.env.REVIEWER = pr_status[1].split('=')[1];
-                process.env.SHOULD_RUN = pr_status[2].split('=')[1];
-                require('fs').appendFileSync(process.env.GITHUB_ENV, `PR_NUMBER=${process.env.PR_NUMBER}\nREVIEWER=${process.env.REVIEWER}\nSHOULD_RUN=${process.env.SHOULD_RUN}\n`);
-            });
 
+      - name: Unzip artifact
+        run: unzip pr_status.zip
+
+      - name: Extract artifact
+        uses: actions/github-script@v6
+        with:
+          script: |
+            let fs = require('fs');
+            let pr_status = fs.readFileSync('pr_status', 'utf8').split('\n');
+            core.exportVariable('PR_NUMBER', pr_status[0].split('=')[1]);
+            core.exportVariable('REVIEWER', pr_status[1].split('=')[1]);
+            core.exportVariable('SHOULD_RUN', pr_status[2].split('=')[1]);
+
+      - name: Save artifact to env
+        run: |
+          echo "PR_NUMBER=$(cat pr_status | grep PR_NUMBER | cut -d'=' -f2)" >> $GITHUB_ENV
+          echo "REVIEWER=$(cat pr_status | grep REVIEWER | cut -d'=' -f2)" >> $GITHUB_ENV
+          echo "SHOULD_RUN=$(cat pr_status | grep SHOULD_RUN | cut -d'=' -f2)" >> $GITHUB_ENV
 
       - name: Set up Python
         if: ${{ env.SHOULD_RUN == 'true' }}
