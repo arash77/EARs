@@ -261,28 +261,41 @@ class EARBotReviewer:
 
     def merged_pr(self, merged=False):
         pr = self.repo.get_pull(int(self.pr_number))
-        reviews = pr.get_reviews().reversed
-        comments = pr.get_issue_comments().reversed
-        for comment in comments:
-            text_to_check = "for the review"
-            if comment.user.type == "Bot" and text_to_check in comment.body:
-                comment_reviewer = re.search(r"@(\w+)", comment.body).group(1).lower()
-                the_review = next(
-                    review
-                    for review in reviews
-                    if review.user.login.lower() == comment_reviewer
-                )
-                break
-        else:
-            the_review = reviews[0]
-
         if "testing" in [label.name for label in pr.get_labels()]:
             pr.remove_from_labels("testing")
+
+        reviews = pr.get_reviews().reversed
+        comments = pr.get_issue_comments().reversed
+        if reviews:
+            for comment in comments:
+                text_to_check = "for the review"
+                if comment.user.type == "Bot" and text_to_check in comment.body:
+                    comment_reviewer = (
+                        re.search(r"@(\w+)", comment.body).group(1).lower()
+                    )
+                    the_review = next(
+                        review
+                        for review in reviews
+                        if review.user.login.lower() == comment_reviewer
+                    )
+                    break
+            else:
+                the_review = reviews[0]
+            reviewer = the_review.user.login.lower()
+        elif pr.requested_reviewers:
+            reviewer = next(
+                req_reviewer.login.lower()
+                for req_reviewer in pr.requested_reviewers
+                if req_reviewer.login.lower() != pr.assignee.login.lower()
+            )
+        else:
+            print("No reviewer found.")
+            sys.exit()
 
         old_reviewers = set()
         submitted_at = None
         institution = None
-        if merged:
+        if merged and reviews:
             for comment in comments:
                 text_to_check = "Please reply to this message"
                 if comment.user.type == "Bot" and text_to_check in comment.body:
@@ -293,17 +306,6 @@ class EARBotReviewer:
             submitted_at = the_review.submitted_at.astimezone(cet).strftime("%Y-%m-%d")
             institution = re.search(r"Affiliation:\s*(\S+)", pr.body).group(1)
 
-        reviewer = the_review.user.login.lower()
-
-        self.EAR_reviewer.update_reviewers_list(
-            reviewer=reviewer,
-            busy=False,
-            institution=institution,
-            submitted_at=submitted_at,
-            old_reviewers=old_reviewers,
-        )
-
-        if merged:
             name = next(
                 (
                     entry["Full Name"]
@@ -314,6 +316,14 @@ class EARBotReviewer:
             )
             species = re.search(r"Species:\s*(.+)", pr.body).group(1).strip()
             self.EAR_reviewer.add_pr(name, institution, species, pr.html_url)
+
+        self.EAR_reviewer.update_reviewers_list(
+            reviewer=reviewer,
+            busy=False,
+            institution=institution,
+            submitted_at=submitted_at,
+            old_reviewers=old_reviewers,
+        )
 
     def find_supervisor(self):
         pr = self.repo.get_pull(int(self.pr_number))
