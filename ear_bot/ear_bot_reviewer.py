@@ -391,8 +391,7 @@ if __name__ == "__main__":
     elif args.supervisor:
         EARBot.find_supervisor()
     elif args.merged is not None:
-        print(args.merged) # for debugging
-        EARBot.merged_pr(args.merged)
+        EARBot.merged_pr(merged=True if args.merged == "true" else False)
     else:
         parser.print_help()
         sys.exit(1)
