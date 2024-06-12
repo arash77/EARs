@@ -102,7 +102,7 @@ class EARBotReviewer:
         self.comment_author = os.getenv("COMMENT_AUTHOR")
         self.reviewer = os.getenv("REVIEWER")
 
-    def find_reviewer(self, prs=[], deadline_check=True):
+    def find_reviewer(self, prs=[], reject=False):
         if not prs:
             prs = list(self.repo.get_pulls(state="open"))
 
@@ -120,25 +120,24 @@ class EARBotReviewer:
             for comment in pr.get_issue_comments().reversed:
                 text_to_check = "Please reply to this message"
                 if comment.user.type == "Bot" and text_to_check in comment.body:
-                    comment_reviewer = (
-                        re.search(r"@(\w+)", comment.body).group(1).lower()
-                    )
                     if not old_reviewers:
                         last_comment_date = comment.created_at.astimezone(cet)
                         deadline_passed = (
                             last_comment_date + timedelta(days=7) < current_date
                         )
-                    old_reviewers.add(comment_reviewer)
+                    comment_reviewer_re = re.search(r"@(\w+)", comment.body)
+                    if comment_reviewer_re:
+                        old_reviewers.add(comment_reviewer_re.group(1).lower())
 
-            institution = re.search(r"Affiliation:\s*(\S+)", pr.body)
-            species = re.search(r"Species:\s*(.+)", pr.body)
-            if not institution or not species:
+            institution_re = re.search(r"Affiliation:\s*(\S+)", pr.body)
+            species_re = re.search(r"Species:\s*(.+)", pr.body)
+            if not institution_re or not species_re:
                 pr.create_issue_comment(
                     "Missing affiliation or species in the PR description."
                 )
                 continue
 
-            institution = institution.group(1)
+            institution = institution_re.group(1)
             list_of_reviewers = self.EAR_reviewer.get_reviewer(institution)
             list_of_reviewers = [
                 reviewer
@@ -147,22 +146,20 @@ class EARBotReviewer:
                 and reviewer != pr.assignee.login.lower()
             ]
 
-            if set(list_of_reviewers).issubset(old_reviewers):
-                old_reviewers.clear()
-
             assign_new_reviewer = False
             if deadline_passed:
                 assign_new_reviewer = True
                 pr.create_issue_comment(
                     "Time is out! I will look for the next reviewer on the list :)"
                 )
-            if not deadline_check:
+            if reject:
                 assign_new_reviewer = True
                 pr.create_issue_comment(
                     "Ok thank you, I will look for the next reviewer on the list :)"
                 )
             if not old_reviewers:
                 assign_new_reviewer = True
+
             if assign_new_reviewer:
                 try:
                     new_reviewer = next(
@@ -228,7 +225,7 @@ class EARBotReviewer:
             self.EAR_reviewer.update_reviewers_list(reviewer=comment_author, busy=True)
 
         elif "no" in comment_text:
-            self.find_reviewer([pr], deadline_check=False)
+            self.find_reviewer([pr], reject=True)
         else:
             print("Invalid comment text.")
             sys.exit(1)
@@ -242,7 +239,9 @@ class EARBotReviewer:
             sys.exit(1)
         supervisor = pr.assignee.login
         if reviewer == supervisor:
-            print("The reviewer is the same as the supervisor, don't need to do anything.")
+            print(
+                "The reviewer is the same as the supervisor, don't need to do anything."
+            )
             sys.exit()
         researcher = pr.user.login
         comment_reviewer = None
@@ -260,33 +259,63 @@ class EARBotReviewer:
             "After merging, you can [upload the assembly to ENA](https://github.com/ERGA-consortium/ERGA-submission)."
         )
 
-    def merged_pr(self):
+    def merged_pr(self, merged=False):
         pr = self.repo.get_pull(int(self.pr_number))
+        if "testing" in [label.name for label in pr.get_labels()]:
+            pr.remove_from_labels("testing")
+
         reviews = pr.get_reviews().reversed
         comments = pr.get_issue_comments().reversed
-        for comment in comments:
-            text_to_check = "for the review"
-            if comment.user.type == "Bot" and text_to_check in comment.body:
-                comment_reviewer = re.search(r"@(\w+)", comment.body).group(1).lower()
-                the_review = next(
-                    review
-                    for review in reviews
-                    if review.user.login.lower() == comment_reviewer
-                )
-                break
+        if reviews:
+            for comment in comments:
+                text_to_check = "for the review"
+                if comment.user.type == "Bot" and text_to_check in comment.body:
+                    comment_reviewer = (
+                        re.search(r"@(\w+)", comment.body).group(1).lower()
+                    )
+                    the_review = next(
+                        review
+                        for review in reviews
+                        if review.user.login.lower() == comment_reviewer
+                    )
+                    break
+            else:
+                the_review = reviews[0]
+            reviewer = the_review.user.login.lower()
+        elif pr.requested_reviewers:
+            reviewer = next(
+                req_reviewer.login.lower()
+                for req_reviewer in pr.requested_reviewers
+                if req_reviewer.login.lower() != pr.assignee.login.lower()
+            )
         else:
-            the_review = reviews[0]
+            print("No reviewer found.")
+            sys.exit()
 
         old_reviewers = set()
-        for comment in comments:
-            text_to_check = "Please reply to this message"
-            if comment.user.type == "Bot" and text_to_check in comment.body:
-                comment_reviewer = re.search(r"@(\w+)", comment.body).group(1).lower()
-                old_reviewers.add(comment_reviewer)
+        submitted_at = None
+        institution = None
+        if merged and reviews:
+            for comment in comments:
+                text_to_check = "Please reply to this message"
+                if comment.user.type == "Bot" and text_to_check in comment.body:
+                    comment_reviewer = (
+                        re.search(r"@(\w+)", comment.body).group(1).lower()
+                    )
+                    old_reviewers.add(comment_reviewer)
+            submitted_at = the_review.submitted_at.astimezone(cet).strftime("%Y-%m-%d")
+            institution = re.search(r"Affiliation:\s*(\S+)", pr.body).group(1)
 
-        reviewer = the_review.user.login.lower()
-        submitted_at = the_review.submitted_at.astimezone(cet).strftime("%Y-%m-%d")
-        institution = re.search(r"Affiliation:\s*(\S+)", pr.body).group(1)
+            name = next(
+                (
+                    entry["Full Name"]
+                    for entry in self.EAR_reviewer.data
+                    if entry.get("Github ID", "").lower() == reviewer
+                ),
+                the_review.user.name or the_review.user.login,
+            )
+            species = re.search(r"Species:\s*(.+)", pr.body).group(1).strip()
+            self.EAR_reviewer.add_pr(name, institution, species, pr.html_url)
 
         self.EAR_reviewer.update_reviewers_list(
             reviewer=reviewer,
@@ -294,22 +323,6 @@ class EARBotReviewer:
             institution=institution,
             submitted_at=submitted_at,
             old_reviewers=old_reviewers,
-        )
-        name = next(
-            (
-                entry["Full Name"]
-                for entry in self.EAR_reviewer.data
-                if entry.get("Github ID", "").lower() == reviewer
-            ),
-            the_review.user.name or the_review.user.login,
-        )
-
-        species = re.search(r"Species:\s*(.+)", pr.body).group(1).strip()
-        self.EAR_reviewer.add_pr(name, institution, species, pr.html_url)
-        (
-            pr.remove_from_labels("testing")
-            if "testing" in [label.name for label in pr.get_labels()]
-            else None
         )
 
     def find_supervisor(self):
@@ -342,11 +355,7 @@ if __name__ == "__main__":
         action="store_true",
         help="Assign the reviewer to the PR when the reviewer agrees.",
     )
-    group.add_argument(
-        "--approve",
-        action="store_true",
-        help="Thanks the reviewer."
-    )
+    group.add_argument("--approve", action="store_true", help="Thanks the reviewer.")
     group.add_argument(
         "--supervisor",
         action="store_true",
@@ -354,7 +363,6 @@ if __name__ == "__main__":
     )
     group.add_argument(
         "--merged",
-        action="store_true",
         help="Remove the testing label and update the reviewer status.",
     )
     args = parser.parse_args()
@@ -367,8 +375,8 @@ if __name__ == "__main__":
         EARBot.approve_reviewer()
     elif args.supervisor:
         EARBot.find_supervisor()
-    elif args.merged:
-        EARBot.merged_pr()
+    elif args.merged is not None:
+        EARBot.merged_pr(args.merged)
     else:
         parser.print_help()
         sys.exit(1)
