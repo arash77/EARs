@@ -295,7 +295,7 @@ class EARBotReviewer:
         old_reviewers = set()
         submitted_at = None
         institution = None
-        if merged and reviews.totalCount > 0:
+        if merged == True and reviews.totalCount > 0:
             for comment in comments:
                 text_to_check = "Please reply to this message"
                 if comment.user.type == "Bot" and text_to_check in comment.body:
@@ -330,14 +330,29 @@ class EARBotReviewer:
         researcher = pr.user.login
         supervisor = self.EAR_reviewer.get_supervisor(researcher)
         try:
-            pr.add_to_labels("ERGA-BGE")
-            pr.add_to_assignees(supervisor)
-            pr.create_review_request([supervisor])
-            message = (
-                f"👋 Hi @{researcher}, thanks for sending the EAR.\n"
-                "I added the corresponding tag to the PR and appointed"
-                f" @{supervisor} as the [assignee](https://github.com/ERGA-consortium/EARs/wiki/Assignees-section) to supervise."
-            )
+            if (
+                "ERGA-BGE" not in [label.name for label in pr.get_labels()]
+                or not pr.assignees
+                or pr.requested_reviewers.totalCount == 0
+            ):
+                pr.add_to_labels("ERGA-BGE")
+                pr.add_to_assignees(supervisor)
+                pr.create_review_request([supervisor])
+                message = (
+                    f"👋 Hi @{researcher}, thanks for sending the EAR.\n"
+                    "I added the corresponding tag to the PR and appointed"
+                    f" @{supervisor} as the [assignee](https://github.com/ERGA-consortium/EARs/wiki/Assignees-section) to supervise."
+                )
+            else:
+                reviewer = next(
+                    (
+                        reviewer.login.lower()
+                        for reviewer in pr.requested_reviewers
+                        if reviewer.login.lower() != supervisor
+                    ),
+                    supervisor,
+                )
+                message = f"The researcher has updated the EAR PDF. Please review the assembly @{reviewer}."
             pr.create_issue_comment(message)
         except Exception as e:
             print(f"An error occurred: {e}")
@@ -376,6 +391,7 @@ if __name__ == "__main__":
     elif args.supervisor:
         EARBot.find_supervisor()
     elif args.merged is not None:
+        print(args.merged) # for debugging
         EARBot.merged_pr(args.merged)
     else:
         parser.print_help()
