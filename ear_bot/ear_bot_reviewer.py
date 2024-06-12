@@ -259,7 +259,7 @@ class EARBotReviewer:
             "After merging, you can [upload the assembly to ENA](https://github.com/ERGA-consortium/ERGA-submission)."
         )
 
-    def merged_pr(self, merged=False):
+    def closed_pr(self, merged=False):
         pr = self.repo.get_pull(int(self.pr_number))
         if "testing" in [label.name for label in pr.get_labels()]:
             pr.remove_from_labels("testing")
@@ -327,15 +327,14 @@ class EARBotReviewer:
 
     def find_supervisor(self):
         pr = self.repo.get_pull(int(self.pr_number))
-        researcher = pr.user.login
-        supervisor = self.EAR_reviewer.get_supervisor(researcher)
         try:
             if (
                 "ERGA-BGE" not in [label.name for label in pr.get_labels()]
                 or not pr.assignees
-                or not pr.requested_reviewers
             ):
                 pr.add_to_labels("ERGA-BGE")
+                researcher = pr.user.login
+                supervisor = self.EAR_reviewer.get_supervisor(researcher)
                 pr.add_to_assignees(supervisor)
                 pr.create_review_request([supervisor])
                 message = (
@@ -344,13 +343,18 @@ class EARBotReviewer:
                     f" @{supervisor} as the [assignee](https://github.com/ERGA-consortium/EARs/wiki/Assignees-section) to supervise."
                 )
             else:
+                if len(pr.requested_reviewers) < 2 and pr.get_reviews().totalCount > 0:
+                    review_user = next(
+                        review.user.login.lower() for review in pr.get_reviews()
+                    )
+                    pr.create_review_request([review_user])
                 reviewer = next(
                     (
                         reviewer.login.lower()
                         for reviewer in pr.requested_reviewers
-                        if reviewer.login.lower() != supervisor
+                        if reviewer.login.lower() != pr.assignee.login.lower()
                     ),
-                    supervisor,
+                    pr.assignee.login.lower(),
                 )
                 message = f"The researcher has updated the EAR PDF. Please review the assembly @{reviewer}."
             pr.create_issue_comment(message)
@@ -391,7 +395,7 @@ if __name__ == "__main__":
     elif args.supervisor:
         EARBot.find_supervisor()
     elif args.merged is not None:
-        EARBot.merged_pr(merged=True if args.merged == "true" else False)
+        EARBot.closed_pr(merged=True if args.merged == "true" else False)
     else:
         parser.print_help()
         sys.exit(1)
