@@ -333,7 +333,7 @@ class EARBotReviewer:
             if (
                 "ERGA-BGE" not in [label.name for label in pr.get_labels()]
                 or not pr.assignees
-                or pr.requested_reviewers.totalCount == 0
+                or not pr.requested_reviewers
             ):
                 pr.add_to_labels("ERGA-BGE")
                 pr.add_to_assignees(supervisor)
