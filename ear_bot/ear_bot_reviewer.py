@@ -259,7 +259,7 @@ class EARBotReviewer:
             "After merging, you can [upload the assembly to ENA](https://github.com/ERGA-consortium/ERGA-submission)."
         )
 
-    def merged_pr(self):
+    def merged_pr(self, merged=False):
         pr = self.repo.get_pull(int(self.pr_number))
         reviews = pr.get_reviews().reversed
         comments = pr.get_issue_comments().reversed
@@ -276,16 +276,24 @@ class EARBotReviewer:
         else:
             the_review = reviews[0]
 
+        if "testing" in [label.name for label in pr.get_labels()]:
+            pr.remove_from_labels("testing")
+
         old_reviewers = set()
-        for comment in comments:
-            text_to_check = "Please reply to this message"
-            if comment.user.type == "Bot" and text_to_check in comment.body:
-                comment_reviewer = re.search(r"@(\w+)", comment.body).group(1).lower()
-                old_reviewers.add(comment_reviewer)
+        submitted_at = None
+        institution = None
+        if merged:
+            for comment in comments:
+                text_to_check = "Please reply to this message"
+                if comment.user.type == "Bot" and text_to_check in comment.body:
+                    comment_reviewer = (
+                        re.search(r"@(\w+)", comment.body).group(1).lower()
+                    )
+                    old_reviewers.add(comment_reviewer)
+            submitted_at = the_review.submitted_at.astimezone(cet).strftime("%Y-%m-%d")
+            institution = re.search(r"Affiliation:\s*(\S+)", pr.body).group(1)
 
         reviewer = the_review.user.login.lower()
-        submitted_at = the_review.submitted_at.astimezone(cet).strftime("%Y-%m-%d")
-        institution = re.search(r"Affiliation:\s*(\S+)", pr.body).group(1)
 
         self.EAR_reviewer.update_reviewers_list(
             reviewer=reviewer,
@@ -294,22 +302,18 @@ class EARBotReviewer:
             submitted_at=submitted_at,
             old_reviewers=old_reviewers,
         )
-        name = next(
-            (
-                entry["Full Name"]
-                for entry in self.EAR_reviewer.data
-                if entry.get("Github ID", "").lower() == reviewer
-            ),
-            the_review.user.name or the_review.user.login,
-        )
 
-        species = re.search(r"Species:\s*(.+)", pr.body).group(1).strip()
-        self.EAR_reviewer.add_pr(name, institution, species, pr.html_url)
-        (
-            pr.remove_from_labels("testing")
-            if "testing" in [label.name for label in pr.get_labels()]
-            else None
-        )
+        if merged:
+            name = next(
+                (
+                    entry["Full Name"]
+                    for entry in self.EAR_reviewer.data
+                    if entry.get("Github ID", "").lower() == reviewer
+                ),
+                the_review.user.name or the_review.user.login,
+            )
+            species = re.search(r"Species:\s*(.+)", pr.body).group(1).strip()
+            self.EAR_reviewer.add_pr(name, institution, species, pr.html_url)
 
     def find_supervisor(self):
         pr = self.repo.get_pull(int(self.pr_number))
@@ -349,7 +353,6 @@ if __name__ == "__main__":
     )
     group.add_argument(
         "--merged",
-        action="store_true",
         help="Remove the testing label and update the reviewer status.",
     )
     args = parser.parse_args()
@@ -362,8 +365,8 @@ if __name__ == "__main__":
         EARBot.approve_reviewer()
     elif args.supervisor:
         EARBot.find_supervisor()
-    elif args.merged:
-        EARBot.merged_pr()
+    elif args.merged is not None:
+        EARBot.merged_pr(args.merged)
     else:
         parser.print_help()
         sys.exit(1)
