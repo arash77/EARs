@@ -266,7 +266,7 @@ class EARBotReviewer:
 
         reviews = pr.get_reviews().reversed
         comments = pr.get_issue_comments().reversed
-        if reviews:
+        if reviews.totalCount > 0:
             for comment in comments:
                 text_to_check = "for the review"
                 if comment.user.type == "Bot" and text_to_check in comment.body:
@@ -295,7 +295,7 @@ class EARBotReviewer:
         old_reviewers = set()
         submitted_at = None
         institution = None
-        if merged and reviews:
+        if merged and reviews.totalCount > 0:
             for comment in comments:
                 text_to_check = "Please reply to this message"
                 if comment.user.type == "Bot" and text_to_check in comment.body:
