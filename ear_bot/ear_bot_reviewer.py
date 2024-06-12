@@ -252,7 +252,7 @@ class EARBotReviewer:
                 break
         if comment_reviewer and comment_reviewer != reviewer:
             print("The reviewer is not the one who agreed to review the PR.")
-            sys.exit(1)
+            sys.exit()
         pr.create_issue_comment(
             f"Thanks @{reviewer} for the review.\nI will add a new reviewed species for you to the table when"
             f" @{supervisor} approves and merges the PR ;)\n\nCongrats on the assembly @{researcher}!\n"
