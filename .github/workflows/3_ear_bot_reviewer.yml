@@ -1,11 +1,6 @@
-name: The EARs Reviewing bot for assigning reviewer
+name: The EARs Reviewing bot for assigning reviewer after supervisor approval
 
 on:
-  workflow_run:
-    workflows: [The EARs Reviewing bot for PRs]
-    types:
-      - completed
-
   schedule:
     - cron: "0 */12 * * *"
 
