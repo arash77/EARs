@@ -6,7 +6,7 @@ on:
 
 jobs:
   approved-changes:
-    if: github.event.review.state == 'approved' && contains(github.event.pull_request.labels.*.name, 'ERGA-BGE')
+    if: github.event.review.state == 'approved'
     runs-on: ubuntu-latest
 
     steps:
@@ -17,7 +17,7 @@ jobs:
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           REVIEWER: ${{ github.event.review.user.login }}
-          should_run: ${{ github.event.review.state == 'approved' && contains(github.event.pull_request.labels.*.name, 'ERGA-BGE') }}
+          should_run: ${{ github.event.review.state == 'approved' }}
         run: |
           echo "PR_NUMBER=$PR_NUMBER" > pr_status
           echo "REVIEWER=$REVIEWER" >> pr_status

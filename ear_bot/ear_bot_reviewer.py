@@ -274,7 +274,6 @@ class EARBotReviewer:
                 " be able to click on the link to the contact map file!)\n"
                 "Contact the PR assignee for any issues."
             )
-            pr.add_to_labels("testing")
         elif "no" in comment_text:
             self.find_reviewer([pr], reject=True)
         else:
@@ -307,8 +306,6 @@ class EARBotReviewer:
     def closed_pr(self, merged=False):
         # Will run when the PR is closed
         pr = self.repo.get_pull(int(self.pr_number))
-        if "testing" in [label.name for label in pr.get_labels()]:
-            pr.remove_from_labels("testing")
 
         reviews = pr.get_reviews().reversed
         if reviews.totalCount > 0:

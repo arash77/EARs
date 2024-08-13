@@ -6,7 +6,7 @@ on:
 
 jobs:
   request-reviewer:
-    if: contains(github.event.issue.labels.*.name, 'ERGA-BGE') && github.event.issue.pull_request
+    if: github.event.issue.pull_request
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

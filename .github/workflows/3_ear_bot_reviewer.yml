@@ -31,3 +31,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
         run: python -u ear_bot/ear_bot_reviewer.py --search
+
+      - name: Upload csv file
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          file_pattern: "rev/*.csv"
+          branch: main

@@ -6,7 +6,6 @@ on:
 
 jobs:
   update-csv:
-    if: contains(github.event.pull_request.labels.*.name, 'ERGA-BGE')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
