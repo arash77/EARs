@@ -28,22 +28,26 @@ class EAR_get_reviewer:
         self.data = get_EAR_reviewer.parse_csv(csv_data)
 
     def get_supervisor(self, user):
-        selected_supervisor = get_EAR_reviewer.select_random_supervisor(self.data, user)
-        if not selected_supervisor:
-            raise Exception("No eligible supervisors found.")
-        return selected_supervisor.get("Github ID")
+        try:
+            selected_supervisor = get_EAR_reviewer.select_random_supervisor(
+                self.data, user
+            )
+            return selected_supervisor.get("Github ID")
+        except Exception as e:
+            raise Exception(f"No eligible supervisors found.\n{e}")
 
     def get_reviewer(self, institution, project):
-        all_eligible_candidates, _, _ = get_EAR_reviewer.select_best_reviewer(
-            self.data, institution, project
-        )
-        if not all_eligible_candidates:
-            raise Exception("No eligible candidates found.")
-        top_candidates = [
-            candidate.get("Github ID", "").lower()
-            for candidate in all_eligible_candidates
-        ]
-        return top_candidates
+        try:
+            all_eligible_candidates, _, _ = get_EAR_reviewer.select_best_reviewer(
+                self.data, institution, project
+            )
+            top_candidates = [
+                candidate.get("Github ID", "").lower()
+                for candidate in all_eligible_candidates
+            ]
+            return top_candidates
+        except Exception as e:
+            raise Exception(f"No eligible candidates found.\n{e}")
 
     def add_pr(self, name, institution, species, pr):
         ear_reviews_csv_file = os.path.join(self.csv_folder, "EAR_reviews.csv")
@@ -195,7 +199,15 @@ class EARBotReviewer:
             )
             institution = self._search_in_body(pr, "Affiliation")
             project = self._search_in_body(pr, "Project")
-            list_of_reviewers = self.EAR_reviewer.get_reviewer(institution, project)
+            try:
+                list_of_reviewers = self.EAR_reviewer.get_reviewer(institution, project)
+            except Exception as e:
+                pr.create_issue_comment(
+                    f"Hi @{supervisor}, it looks like there is a problem with this PR that requires your involvement to sort it out."
+                )
+                pr.add_to_labels("ERROR!")
+                print(f"Error finding reviewers.\n{e}")
+                continue
             list_of_reviewers = [
                 reviewer
                 for reviewer in list_of_reviewers

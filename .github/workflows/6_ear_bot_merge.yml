@@ -5,7 +5,7 @@ on:
     types: [closed]
 
 jobs:
-  update-csv:
+  closed-pr:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

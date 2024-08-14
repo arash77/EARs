@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  comment-reviewer:
+  find-reviewer:
     runs-on: ubuntu-latest
     permissions:
       contents: write

@@ -7,7 +7,7 @@ on:
       - "Assembly_Reports/**/*.pdf"
 
 jobs:
-  add-label-and-supervisor:
+  add-label-and-find-supervisor:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

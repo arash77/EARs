@@ -5,7 +5,7 @@ on:
     types: [created]
 
 jobs:
-  request-reviewer:
+  new-comment:
     if: github.event.issue.pull_request
     runs-on: ubuntu-latest
     steps:
