@@ -303,9 +303,10 @@ class EARBotReviewer:
             sys.exit(1)
         supervisor = pr.assignee.login
         researcher = pr.user.login
-        comment_reviewer = self._search_comment_user(pr, "for agreeing")
-        if not comment_reviewer or (
-            comment_reviewer and comment_reviewer[0] != reviewer
+        comment_reviewer = pr.get_reviews()
+        if comment_reviewer.totalCount == 0 or (
+            comment_reviewer.totalCount > 0
+            and comment_reviewer[0].user.login.lower() != reviewer
         ):
             print("The reviewer is not the one who agreed to review the PR.")
             sys.exit()
