@@ -201,6 +201,12 @@ class EARBotReviewer:
             project = self._search_in_body(pr, "Project")
             try:
                 list_of_reviewers = self.EAR_reviewer.get_reviewer(institution, project)
+                list_of_reviewers = [
+                    reviewer
+                    for reviewer in list_of_reviewers
+                    if reviewer != pr.user.login.lower()
+                    and reviewer != pr.assignee.login.lower()
+                ]
             except Exception as e:
                 pr.create_issue_comment(
                     f"Hi @{supervisor}, it looks like there is a problem with this PR that requires your involvement to sort it out."
@@ -208,12 +214,6 @@ class EARBotReviewer:
                 pr.add_to_labels("ERROR!")
                 print(f"Error finding reviewers.\n{e}")
                 continue
-            list_of_reviewers = [
-                reviewer
-                for reviewer in list_of_reviewers
-                if reviewer != pr.user.login.lower()
-                and reviewer != pr.assignee.login.lower()
-            ]
 
             if deadline_passed or reject:
                 self.EAR_reviewer.update_reviewers_list(
