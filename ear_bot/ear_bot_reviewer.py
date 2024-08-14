@@ -279,7 +279,7 @@ class EARBotReviewer:
         if "yes" in comment_text:
             pr.create_review_request([comment_author])
             pr.create_issue_comment(
-                f"Thanks @{comment_author} for agreeing!\n"
+                "Thanks for agreeing!\n"
                 "I appointed you as the EAR reviewer.\n"
                 "I will keep your status as _Busy_ until you finish this review.\n"
                 "Please check the [Wiki](https://github.com/ERGA-consortium/EARs/wiki/Reviewers-section)"
@@ -303,9 +303,10 @@ class EARBotReviewer:
             sys.exit(1)
         supervisor = pr.assignee.login
         researcher = pr.user.login
-        comment_reviewer = self._search_comment_user(pr, "for agreeing")
-        if not comment_reviewer or (
-            comment_reviewer and comment_reviewer[0] != reviewer
+        comment_reviewer = pr.get_reviews()
+        if comment_reviewer.totalCount == 0 or (
+            comment_reviewer.totalCount > 0
+            and comment_reviewer[0].user.login.lower() != reviewer
         ):
             print("The reviewer is not the one who agreed to review the PR.")
             sys.exit()
