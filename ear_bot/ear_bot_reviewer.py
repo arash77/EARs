@@ -55,6 +55,7 @@ class EAR_get_reviewer:
             raise Exception("The EAR reviews CSV file does not exist.")
         with open(ear_reviews_csv_file, "a") as file:
             file.write(f"{name},{institution},{species},{pr}\n")
+        print(f"Added {name} to the EAR reviews CSV file.")
 
     def update_reviewers_list(
         self,
@@ -94,6 +95,7 @@ class EAR_get_reviewer:
             csv_str += ",".join(row.values()) + "\n"
         with open(self.csv_file, "w") as file:
             file.write(csv_str)
+        print(f"Updated the reviewers list for {reviewer}.\n")
 
 
 class EARBotReviewer:
@@ -349,7 +351,7 @@ class EARBotReviewer:
         old_reviewers = set()
         if merged == True and reviews.totalCount > 0:
             old_reviewers = set(self._search_comment_user(pr, "do you agree to review"))
-            submitted_at = the_review.submitted_at.astimezone(cet).strftime("%Y-%m-%d")
+            submitted_at = datetime.now(tz=cet).strftime("%Y-%m-%d")
             institution = self._search_in_body(pr, "Affiliation")
             species = self._search_in_body(pr, "Species")
             name = next(
