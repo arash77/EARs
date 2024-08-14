@@ -132,6 +132,7 @@ class EARBotReviewer:
                     review.user.login.lower() for review in pr.get_reviews()
                 )
                 pr.create_review_request([review_user])
+                pr = self.repo.get_pull(int(self.pr_number))
             reviewer = next(
                 (
                     reviewer.login.lower()
