@@ -166,7 +166,7 @@ class EARBotReviewer:
             sys.exit(1)
         if "ok" in comment_text:
             pr.add_to_assignees(supervisor)
-            self.find_reviewer([pr])
+            self.find_reviewer([self.repo.get_pull(int(self.pr_number))])
         else:
             pr.create_issue_comment(f"Invalid confirmation!")
             pr.add_to_labels("ERROR!")
@@ -208,6 +208,7 @@ class EARBotReviewer:
                     and reviewer != pr.assignee.login.lower()
                 ]
             except Exception as e:
+                supervisor = pr.assignee.login
                 pr.create_issue_comment(
                     f"Hi @{supervisor}, it looks like there is a problem with this PR that requires your involvement to sort it out."
                 )
