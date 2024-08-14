@@ -279,7 +279,7 @@ class EARBotReviewer:
         if "yes" in comment_text:
             pr.create_review_request([comment_author])
             pr.create_issue_comment(
-                "Thanks for agreeing!\n"
+                f"Thanks @{comment_author} for agreeing!\n"
                 "I appointed you as the EAR reviewer.\n"
                 "I will keep your status as _Busy_ until you finish this review.\n"
                 "Please check the [Wiki](https://github.com/ERGA-consortium/EARs/wiki/Reviewers-section)"
