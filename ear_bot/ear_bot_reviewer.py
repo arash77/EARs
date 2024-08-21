@@ -351,7 +351,7 @@ class EARBotReviewer:
         institution = None
         old_reviewers = set()
         if merged == True and reviews.totalCount > 0:
-            old_reviewers = set(self._search_comment_user(pr, "do you agree to review"))
+            old_reviewers = set(self._search_comment_user(pr, "do you agree to review")) # only to the reviewers that wasted time!
             submitted_at = datetime.now(tz=cet).strftime("%Y-%m-%d")
             institution = self._search_in_body(pr, "Affiliation")
             species = self._search_in_body(pr, "Species")
