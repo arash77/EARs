@@ -236,22 +236,22 @@ class EARBotReviewer:
             sys.exit(1)
 
         if not pr.assignees:
-            supervisors = self._search_comment_user(pr, "do you agree to [supervise]")
-            if not supervisors:
-                print("No called supervisor found in comments.")
-                sys.exit(1)
-            supervisor = supervisors[0]
-            if comment_author != supervisor:
-                print(
-                    "The supervisor is not the one who was asked to supervise the PR."
-                )
+            supervisors = [
+                reviewer["Github ID"]
+                for reviewer in self.EAR_reviewer.data
+                if reviewer["Supervisor"] == "Y"
+                and reviewer["Github ID"] != pr.user.login
+            ]
+            if comment_author not in supervisors:
+                print("The comment author is not one of the supervisors.")
                 sys.exit(1)
             if "ok" in comment_text:
-                pr.add_to_assignees(supervisor)
+                pr.add_to_assignees(comment_author)
                 self.find_reviewer([self.repo.get_pull(int(self.pr_number))])
             else:
                 pr.create_issue_comment(f"Invalid confirmation!")
                 pr.add_to_labels("ERROR!")
+                sys.exit(1)
         else:
             print(
                 "The PR has already been assigned to a supervisor.\nChecking for the reviewer..."
