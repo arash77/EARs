@@ -197,9 +197,9 @@ class EARBotReviewer:
                     reviewer=last_reviewer, busy=False
                 )
                 message = (
-                    "Time is out! I will look for the next reviewer on the list :)"
+                    f"@{last_reviewer} Time is out! I will look for the next reviewer on the list :)"
                     if deadline_passed
-                    else "Ok thank you, I will look for the next reviewer on the list :)"
+                    else f"@{last_reviewer} Ok thank you, I will look for the next reviewer on the list :)"
                 )
                 pr.create_issue_comment(message)
 
@@ -349,9 +349,9 @@ class EARBotReviewer:
 
         submitted_at = None
         institution = None
-        old_reviewers = set()
+        time_wasted_reviewers = set()
         if merged == True and reviews.totalCount > 0:
-            old_reviewers = set(self._search_comment_user(pr, "do you agree to review")) # only to the reviewers that wasted time!
+            time_wasted_reviewers = set(self._search_comment_user(pr, "Time is out!"))
             submitted_at = datetime.now(tz=cet).strftime("%Y-%m-%d")
             institution = self._search_in_body(pr, "Affiliation")
             species = self._search_in_body(pr, "Species")
@@ -371,7 +371,7 @@ class EARBotReviewer:
             busy=False,
             institution=institution,
             submitted_at=submitted_at,
-            old_reviewers=old_reviewers,
+            old_reviewers=time_wasted_reviewers,
         )
 
     def _search_comment_user(self, pr, text_to_check):
