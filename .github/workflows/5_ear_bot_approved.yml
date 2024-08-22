@@ -6,7 +6,7 @@ on:
 
 jobs:
   approved-changes:
-    if: github.event.review.state == 'approved'
+    if: github.event.review.state == 'approved' && contains(github.event.pull_request.labels.*.name, 'ERGA-*')
     runs-on: ubuntu-latest
 
     steps:
