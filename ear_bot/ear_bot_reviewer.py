@@ -113,6 +113,14 @@ class EARBotReviewer:
         pr = self.repo.get_pull(int(self.pr_number))
         if not pr.get_labels() or not pr.assignees:
             project = self._search_in_body(pr, "Project")
+            valid_projects = ["ERGA-BGE", "ERGA-Pilot", "ERGA-Community"]
+            if project not in valid_projects:
+                pr.create_issue_comment(
+                    "you have entered an invalid project name.\n"
+                    f"Please use one of the following projects: {', '.join(valid_projects)}"
+                )
+                pr.add_to_labels("ERROR!")
+                raise Exception(f"Invalid project name: {project}")
             pr.add_to_labels(project)
             researcher = pr.user.login
             species = self._search_in_body(pr, "Species")
