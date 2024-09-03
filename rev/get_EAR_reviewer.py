@@ -1,7 +1,7 @@
 # get_EAR_reviewer.py
 # by Diego De Panis
 # ERGA Sequencing and Assembly Committee
-version = "v24.05.31_beta"
+version = "v24.08.29"
 
 import argparse
 import os
@@ -38,7 +38,7 @@ def adjust_score(reviewer, tags):
         "Genoscope",
         "SciLifeLab",
     ]:
-        score += 50
+        score += 50  # Additional 50 points for reviewers from BGE institutions if 'ERGA-BGE' tag is used
     return score
 
 
@@ -118,7 +118,11 @@ def select_best_reviewer(data, calling_institution, use_bge):
     )
 
     if len(top_candidates) == 1:
-        return eligible_candidates, top_candidates, "Highest adjusted calling score."
+        return (
+            eligible_candidates,
+            top_candidates,
+            "highest adjusted calling score in this particular selection",
+        )
 
     # Check if there is a tie on 'Parsed Last Review' and 'Total Reviews'
     oldest_review = top_candidates[0]["Parsed Last Review"]
@@ -134,7 +138,7 @@ def select_best_reviewer(data, calling_institution, use_bge):
         return (
             eligible_candidates,
             final_candidates,
-            "chosen based on oldest review and fewest reviews among the finalists",
+            "oldest review and fewest reviews among the finalists",
         )
 
     # If still tied, randomly select one
@@ -142,7 +146,7 @@ def select_best_reviewer(data, calling_institution, use_bge):
     return (
         eligible_candidates,
         [selected],
-        "randomly chosen to break a tie among the finalists",
+        "random selection to break a tie among the finalists",
     )
 
 
@@ -245,10 +249,7 @@ def main():
                 print(f"- different institution ('{selected_reviewer['Institution']}')")
                 print(f"- active ('{selected_reviewer['Active']}')")
                 print(f"- not busy ('{selected_reviewer['Busy']}')")
-                print(
-                    f"- highest adjusted calling score in this particular selection ({selected_reviewer['Adjusted Score']})"
-                )
-                print(f"- {selection_reason}")
+                print(f"- {selection_reason} ({selected_reviewer['Adjusted Score']})")
             else:
                 print("No suitable reviewer found at the moment.")
         else:
