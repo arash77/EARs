@@ -86,14 +86,12 @@ class EAR_get_reviewer:
             if reviewer_data_institution == institution.lower():
                 reviewer_data["Calling Score"] = str(reviewer_data_score + 1)
 
-            print(reviewer_data)
-
         csv_str = ",".join(self.data[0].keys()) + "\n"
         for row in self.data:
             csv_str += ",".join(row.values()) + "\n"
         with open(self.csv_file, "w") as file:
             file.write(csv_str)
-        print(f"Updated the reviewers list for {', '.join(reviewers)}.")
+        print(f"Updated the reviewers list for {', '.join(reviewers)}.\n{csv_str}")
 
 
 class EARBotReviewer:
@@ -205,7 +203,7 @@ class EARBotReviewer:
                         f" {(current_date + timedelta(days=7)).strftime('%d-%b-%Y at %H:%M CET')}"
                     )
                     self.EAR_reviewer.update_reviewers_list(
-                        reviewers=[new_reviewer], busy=True
+                        reviewers=[new_reviewer.lower()], busy=True
                     )
             except Exception as e:
                 supervisor = pr.assignee.login
