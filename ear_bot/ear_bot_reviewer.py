@@ -86,12 +86,14 @@ class EAR_get_reviewer:
             if reviewer_data_institution == institution.lower():
                 reviewer_data["Calling Score"] = str(reviewer_data_score + 1)
 
+            print(reviewer_data)
+
         csv_str = ",".join(self.data[0].keys()) + "\n"
         for row in self.data:
             csv_str += ",".join(row.values()) + "\n"
         with open(self.csv_file, "w") as file:
             file.write(csv_str)
-        print(f"Updated the reviewers list for {', '.join(reviewers)}.\n{csv_str}")
+        print(f"Updated the reviewers list for {', '.join(reviewers)}.")
 
 
 class EARBotReviewer:
@@ -356,6 +358,10 @@ class EARBotReviewer:
             comment_reviewer = self._search_comment_user(pr, "do you agree to review")
             self.EAR_reviewer.update_reviewers_list(
                 reviewers=set(comment_reviewer), busy=False
+            )
+            supervisor = pr.assignee.login
+            pr.create_issue_comment(
+                f"@{supervisor}, The PR was closed. Please check for any issues."
             )
 
     def _search_comment_user(self, pr, text_to_check):
