@@ -366,6 +366,13 @@ class EARBotReviewer:
             )
 
             self.EAR_reviewer.add_pr(name, institution, species, pr.html_url)
+        else:
+            comment_reviewer = self._search_comment_user(pr, "do you agree to review")
+            for old_reviewer in set(comment_reviewer):
+                if old_reviewer != reviewer:
+                    self.EAR_reviewer.update_reviewers_list(
+                        reviewer=old_reviewer, busy=False
+                    )
 
         self.EAR_reviewer.update_reviewers_list(
             reviewer=reviewer,
