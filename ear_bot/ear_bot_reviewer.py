@@ -232,7 +232,7 @@ class EARBotReviewer:
             ]
             if comment_author not in supervisors:
                 print("The comment author is not one of the supervisors.")
-                sys.exit(1)
+                sys.exit()
             if "ok" in comment_text:
                 pr.add_to_assignees(comment_author)
                 self.find_reviewer([self.repo.get_pull(int(self.pr_number))])
