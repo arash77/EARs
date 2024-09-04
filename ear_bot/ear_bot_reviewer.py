@@ -291,7 +291,7 @@ class EARBotReviewer:
                     f" {(current_date + timedelta(days=7)).strftime('%d-%b-%Y at %H:%M CET')}"
                 )
                 print("Invalid comment text.")
-                sys.exit(1)
+                sys.exit()
 
     def approve_reviewer(self):
         # Will run when there is a new review
