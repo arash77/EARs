@@ -8,9 +8,8 @@ on:
 
 jobs:
   approved-changes:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    if: github.repository == 'ERGA-consortium/EARs' && ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
-
     steps:
       - name: Generate a token
         id: generate-token

@@ -8,6 +8,7 @@ on:
 
 jobs:
   add-label-and-find-supervisor:
+    if: github.repository == 'ERGA-consortium/EARs'
     runs-on: ubuntu-latest
     steps:
       - name: Generate a token

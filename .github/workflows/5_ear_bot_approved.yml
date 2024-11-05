@@ -6,9 +6,8 @@ on:
 
 jobs:
   approved-changes:
-    if: github.event.review.state == 'approved' && (contains(github.event.pull_request.labels.*.name, 'ERGA-BGE') || contains(github.event.pull_request.labels.*.name, 'ERGA-Pilot') || contains(github.event.pull_request.labels.*.name, 'ERGA-Community'))
+    if: github.repository == 'ERGA-consortium/EARs' && github.event.review.state == 'approved' && (contains(github.event.pull_request.labels.*.name, 'ERGA-BGE') || contains(github.event.pull_request.labels.*.name, 'ERGA-Pilot') || contains(github.event.pull_request.labels.*.name, 'ERGA-Community'))
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4

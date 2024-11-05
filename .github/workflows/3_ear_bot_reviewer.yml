@@ -8,6 +8,7 @@ on:
 
 jobs:
   find-reviewer:
+    if: github.repository == 'ERGA-consortium/EARs'
     runs-on: ubuntu-latest
     steps:
       - name: Generate a token
