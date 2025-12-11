@@ -56,20 +56,8 @@ class EAR_get_reviewer:
         except Exception as e:
             raise Exception(f"No eligible supervisors found.\n{e}")
 
-    def get_reviewer(self, institution, project, exclude_reviewers=None):
+    def get_reviewer(self, institution, project):
         try:
-            if exclude_reviewers:
-                exclude_set = set(r.lower() for r in exclude_reviewers)
-                filtered_data = [
-                    reviewer
-                    for reviewer in self.data
-                    if reviewer.get("Github ID", "").lower() not in exclude_set
-                ]
-            else:
-                filtered_data = self.data
-            _, top_candidate, _ = get_EAR_reviewer.select_best_reviewer(
-                filtered_data, institution, project
-            )
             get_EAR_reviewer_path = os.path.join(csv_folder, "get_EAR_reviewer.py")
             reviewer_print = subprocess.run(
                 f"python {get_EAR_reviewer_path} -i '{institution}' -t '{project}'",
@@ -77,7 +65,13 @@ class EAR_get_reviewer:
                 capture_output=True,
                 text=True,
             ).stdout
-            return top_candidate[0].get("Github ID"), reviewer_print
+
+            match = re.search(r"Selected reviewer: .+ \((\w+)\)", reviewer_print)
+            if not match:
+                raise Exception("Could not parse selected reviewer from output")
+            new_reviewer = match.group(1)
+
+            return new_reviewer, reviewer_print
         except Exception as e:
             raise Exception(f"No eligible candidates found.\n{e}")
 
@@ -302,9 +296,7 @@ class EARBotReviewer:
 
                 if deadline_passed or reject or not old_reviewers_list:
                     new_reviewer, get_EAR_reviewer_print = (
-                        self.EAR_reviewer.get_reviewer(
-                            institution, project, old_reviewers_list
-                        )
+                        self.EAR_reviewer.get_reviewer(institution, project)
                     )
                     pr.create_issue_comment(f"```\n{get_EAR_reviewer_print}```")
                     pr.create_issue_comment(
