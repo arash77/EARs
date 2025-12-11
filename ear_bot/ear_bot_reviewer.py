@@ -56,10 +56,19 @@ class EAR_get_reviewer:
         except Exception as e:
             raise Exception(f"No eligible supervisors found.\n{e}")
 
-    def get_reviewer(self, institution, project):
+    def get_reviewer(self, institution, project, exclude_reviewers=None):
         try:
+            if exclude_reviewers:
+                exclude_set = set(r.lower() for r in exclude_reviewers)
+                filtered_data = [
+                    reviewer
+                    for reviewer in self.data
+                    if reviewer.get("Github ID", "").lower() not in exclude_set
+                ]
+            else:
+                filtered_data = self.data
             _, top_candidate, _ = get_EAR_reviewer.select_best_reviewer(
-                self.data, institution, project
+                filtered_data, institution, project
             )
             get_EAR_reviewer_path = os.path.join(csv_folder, "get_EAR_reviewer.py")
             reviewer_print = subprocess.run(
@@ -293,7 +302,9 @@ class EARBotReviewer:
 
                 if deadline_passed or reject or not old_reviewers_list:
                     new_reviewer, get_EAR_reviewer_print = (
-                        self.EAR_reviewer.get_reviewer(institution, project)
+                        self.EAR_reviewer.get_reviewer(
+                            institution, project, old_reviewers_list
+                        )
                     )
                     pr.create_issue_comment(f"```\n{get_EAR_reviewer_print}```")
                     pr.create_issue_comment(
@@ -348,7 +359,7 @@ class EARBotReviewer:
                 pr.add_to_assignees(comment_author)
                 self.find_reviewer([self.repo.get_pull(int(self.pr_number))])
             else:
-                pr.create_issue_comment(f"Invalid confirmation!")
+                pr.create_issue_comment("Invalid confirmation!")
                 pr.add_to_labels("ERROR!")
                 sys.exit(1)
         else:
