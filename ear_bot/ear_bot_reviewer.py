@@ -854,6 +854,9 @@ class EARBotReviewer:
                     f"{EAR_pdf_url}"
                 )
                 self._create_slack_post(slack_post)
+        elif not merged and not pr.assignee:
+            # Closed before passing the checks: no supervisor, no reviewer asked, nothing to clear.
+            print("Closed before a supervisor was assigned: nothing to clear.")
         elif not merged:
             supervisor = pr.assignee.login
             pr.create_issue_comment(
