@@ -40,6 +40,9 @@ Customisation notes:
 """
 
 import base64
+import contextlib
+import csv
+import io
 import os
 import re
 import subprocess
@@ -105,12 +108,12 @@ class EAR_get_reviewer:
 
     REVIEWERS_CSV = "rev/reviewers_list.csv"
     EAR_REVIEWS_CSV = "rev/EAR_reviews.csv"
-    GET_EAR_REVIEWER_SCRIPT = "rev/get_EAR_reviewer.py"
 
     def __init__(self, repo) -> None:
         self.repo = repo
         csv_data = self._fetch_csv_from_repo(self.REVIEWERS_CSV)
         self.data = get_EAR_reviewer.parse_csv(csv_data)
+        self.fieldnames = next(csv.reader(io.StringIO(csv_data)))
 
     def _fetch_csv_from_repo(self, csv_path):
         contents = self.repo.get_contents(csv_path)
@@ -133,19 +136,13 @@ class EAR_get_reviewer:
             raise Exception(f"No eligible supervisors found.\n{e}")
 
     def get_reviewer(self, institution, project):
-        try:
-            _, top_candidate, _ = get_EAR_reviewer.select_best_reviewer(
-                self.data, institution, project
-            )
-            reviewer_print = subprocess.run(
-                f"python {_get_local_path(self.GET_EAR_REVIEWER_SCRIPT)} -i '{institution}' -t '{project}'",
-                shell=True,
-                capture_output=True,
-                text=True,
-            ).stdout
-            return top_candidate[0].get("Github ID"), reviewer_print
-        except Exception as e:
-            raise Exception(f"No eligible candidates found.\n{e}")
+        # One selection: the posted table always names the reviewer the bot asks.
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output):
+            selected = get_EAR_reviewer.print_selection(self.data, institution, project)
+        if selected is None:
+            raise Exception(f"No eligible candidates found.\n{output.getvalue()}")
+        return selected.get("Github ID"), output.getvalue()
 
     def add_pr(
         self,
@@ -164,19 +161,43 @@ class EAR_get_reviewer:
         other_participants,
         notes,
     ):
+        """Append the review to EAR_reviews.csv. False if this PR is already there
+        (a re-run of the merge workflow), so the caller does not credit it twice."""
         ear_reviews_csv_data = self._fetch_csv_from_repo(self.EAR_REVIEWS_CSV)
+        if any(
+            row and row[0] == pr_url
+            for row in csv.reader(io.StringIO(ear_reviews_csv_data))
+        ):
+            print(f"{pr_url} is already in the EAR reviews CSV file.")
+            return False
 
-        csv_row = (
-            f"{pr_url},{species},{tag},{requester_name},"
-            f"{requester_affiliation},{reviewer_name},{reviewer_affiliation},"
-            f"{supervisor_name},{supervisor_affiliation},{interaction_count},"
-            f'{open_date},{approval_date},"{other_participants}",{notes}\n'
+        row = io.StringIO()
+        csv.writer(row, lineterminator="\n").writerow(
+            [
+                pr_url,
+                species,
+                tag,
+                requester_name,
+                requester_affiliation,
+                reviewer_name,
+                reviewer_affiliation,
+                supervisor_name,
+                supervisor_affiliation,
+                interaction_count,
+                open_date,
+                approval_date,
+                other_participants,
+                notes,
+            ]
         )
-        ear_reviews_csv_data += csv_row
+        if not ear_reviews_csv_data.endswith("\n"):
+            ear_reviews_csv_data += "\n"
+        ear_reviews_csv_data += row.getvalue()
         commit(
             self.repo, self.EAR_REVIEWS_CSV, "Add new EAR review", ear_reviews_csv_data
         )
         print(f"Added {reviewer_name} to the EAR reviews CSV file.")
+        return True
 
     def update_reviewers_list(
         self,
@@ -214,9 +235,7 @@ class EAR_get_reviewer:
             if reviewer_data_institution == institution.lower():
                 reviewer_data["Calling Score"] = str(reviewer_data_score + 1)
 
-        csv_str = ",".join(self.data[0].keys()) + "\n"
-        for row in self.data:
-            csv_str += ",".join(row.values()) + "\n"
+        csv_str = get_EAR_reviewer.format_csv(self.data, self.fieldnames)
         commit(self.repo, self.REVIEWERS_CSV, "Update reviewers list", csv_str)
         print(f"Updated the reviewers list for {', '.join(reviewers)}.\n{csv_str}")
 
@@ -393,7 +412,12 @@ class EARBotReviewer:
         current_date = datetime.now(tz=cet)
 
         for pr in prs:
-            if not any(label.name in self.valid_projects for label in pr.get_labels()):
+            labels = {label.name for label in pr.get_labels()}
+            if not labels & set(self.valid_projects):
+                # EAR-UPDATE and ERROR! PRs are EAR PRs too: track their activity,
+                # but never ask a reviewer for them. Other PRs (code, dependabot) are skipped.
+                if labels & {"EAR-UPDATE", "ERROR!"}:
+                    self._check_pr_activity(pr, current_date)
                 continue
             self._check_pr_activity(pr, current_date)
             if (
@@ -776,7 +800,7 @@ class EARBotReviewer:
             researcher_institution = self._search_for_institution(pr)
             other_participants_str = ", ".join(sorted(other_participants))
 
-            self.EAR_reviewer.add_pr(
+            recorded = self.EAR_reviewer.add_pr(
                 pr_url=pr.html_url,
                 species=species,
                 tag=tag,
@@ -794,12 +818,13 @@ class EARBotReviewer:
             )
 
             institution = self._search_for_institution(pr)
-            self.EAR_reviewer.update_reviewers_list(
-                reviewers=[reviewer_id],
-                busy=False,
-                institution=institution,
-                submitted_at=submitted_at,
-            )
+            if recorded:
+                self.EAR_reviewer.update_reviewers_list(
+                    reviewers=[reviewer_id],
+                    busy=False,
+                    institution=institution,
+                    submitted_at=submitted_at,
+                )
             EAR_pdf = next(
                 file
                 for file in pr.get_files()

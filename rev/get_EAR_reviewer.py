@@ -5,6 +5,8 @@ version = "v25.10.10"
 
 import requests
 import random
+import csv
+import io
 from datetime import datetime
 import argparse
 
@@ -24,10 +26,18 @@ def download_csv(url):
         return None
 
 def parse_csv(csv_str):
-    lines = csv_str.strip().split('\n')
-    headers = lines[0].split(',')
-    data = [dict(zip(headers, line.split(','))) for line in lines[1:]]
-    return data
+    # csv module, so a quoted field with a comma (e.g. "Doe, Jane") keeps its columns.
+    # Columns a short row does not reach are left out, as before, so .get() defaults still work.
+    reader = csv.DictReader(io.StringIO(csv_str.strip()))
+    return [{key: value for key, value in row.items() if value is not None} for row in reader]
+
+def format_csv(rows, fieldnames):
+    """Rows back to CSV text, quoting only fields that need it."""
+    buffer = io.StringIO()
+    writer = csv.DictWriter(buffer, fieldnames=fieldnames, lineterminator='\n')
+    writer.writeheader()
+    writer.writerows({key: row.get(key, '') for key in fieldnames} for row in rows)
+    return buffer.getvalue()
 
 def normalize_institution(institution):
     institution = institution.lower()
@@ -101,6 +111,8 @@ def select_best_reviewer(data, calling_institution, use_bge):
     
     top_score = eligible_candidates[0]['Adjusted Score'] if eligible_candidates else None
     top_candidates = [c for c in eligible_candidates if c['Adjusted Score'] == top_score] if top_score is not None else []
+    if not top_candidates:
+        return eligible_candidates, [], "no eligible candidates"
 
     if len(top_candidates) == 1:
         return eligible_candidates, top_candidates, "highest adjusted calling score in this particular selection"
@@ -159,34 +171,40 @@ def main():
                 print("No eligible supervisors found.")
             return
 
-        all_eligible_candidates, top_candidates, selection_reason = select_best_reviewer(data, args.institution, args.tag)
-        print("*****")
-        print("EAR Reviewer Selection Process")
-        print(f"Date: {datetime.now().strftime('%Y-%m-%d %H:%M')}\n")
-        
-        if all_eligible_candidates:
-            print("All Eligible Candidates:\n")
-            selected_reviewer = top_candidates[0] if top_candidates else None
-            print_csv(all_eligible_candidates, selected_reviewer)
-
-            if top_candidates:
-                print(f"\nSelected reviewer: {selected_reviewer['Full Name']} ({selected_reviewer['Github ID']})")
-                print("The decision was based on:")
-                print(f"- different institution ('{selected_reviewer['Institution']}')")
-                print(f"- active ('{selected_reviewer['Active']}')")
-                working_prs = selected_reviewer.get('Working PRs', '0')
-                print(f"- working on {working_prs} PR(s) currently")
-                print(f"- {selection_reason} ({selected_reviewer['Adjusted Score']})")
-                
-                # Additional info about score adjustments if working on PRs
-                if int(working_prs) > 0:
-                    print(f"  (Note: Adjusted score already considering -{20 * int(working_prs)} points due to {working_prs} ongoing PR(s))")
-            else:
-                print("No suitable reviewer found at the moment.")
-        else:
-            print("No eligible candidates found.")
+        print_selection(data, args.institution, args.tag)
     else:
         print("Failed to process reviewers data.")
+
+def print_selection(data, institution, tags):
+    """Select the reviewer, print the table and why; return the selected row or None.
+    The bot posts this output, so the table always names the reviewer it asks."""
+    all_eligible_candidates, top_candidates, selection_reason = select_best_reviewer(data, institution, tags)
+    print("*****")
+    print("EAR Reviewer Selection Process")
+    print(f"Date: {datetime.now().strftime('%Y-%m-%d %H:%M')}\n")
+    
+    if all_eligible_candidates:
+        print("All Eligible Candidates:\n")
+        selected_reviewer = top_candidates[0] if top_candidates else None
+        print_csv(all_eligible_candidates, selected_reviewer)
+
+        if top_candidates:
+            print(f"\nSelected reviewer: {selected_reviewer['Full Name']} ({selected_reviewer['Github ID']})")
+            print("The decision was based on:")
+            print(f"- different institution ('{selected_reviewer['Institution']}')")
+            print(f"- active ('{selected_reviewer['Active']}')")
+            working_prs = selected_reviewer.get('Working PRs', '0')
+            print(f"- working on {working_prs} PR(s) currently")
+            print(f"- {selection_reason} ({selected_reviewer['Adjusted Score']})")
+            
+            # Additional info about score adjustments if working on PRs
+            if int(working_prs) > 0:
+                print(f"  (Note: Adjusted score already considering -{20 * int(working_prs)} points due to {working_prs} ongoing PR(s))")
+        else:
+            print("No suitable reviewer found at the moment.")
+    else:
+        print("No eligible candidates found.")
+    return top_candidates[0] if all_eligible_candidates and top_candidates else None
 
 if __name__ == "__main__":
     main()

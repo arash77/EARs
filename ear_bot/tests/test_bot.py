@@ -184,3 +184,65 @@ def test_old_prs_keep_the_old_system(monkeypatch):
     assert bot._deadline(monday, old) == datetime(
         2026, 12, 11, 13, tzinfo=timezone.utc
     )  # 100 working hours
+
+
+# --- roster bookkeeping -------------------------------------------------------
+from rev import get_EAR_reviewer  # noqa: E402
+
+
+def test_roster_round_trips_byte_for_byte():
+    text = open(os.path.join(ROOT, "rev/reviewers_list.csv"), encoding="utf-8").read()
+    fieldnames = text.split("\n", 1)[0].split(",")
+    assert get_EAR_reviewer.format_csv(get_EAR_reviewer.parse_csv(text), fieldnames) == text
+
+
+def test_quoted_comma_keeps_its_columns():
+    text = 'Github ID,Full Name,Institution\njdoe,"Doe, Jane",IZW\n'
+    rows = get_EAR_reviewer.parse_csv(text)
+    assert rows == [{"Github ID": "jdoe", "Full Name": "Doe, Jane", "Institution": "IZW"}]
+    assert get_EAR_reviewer.format_csv(rows, ["Github ID", "Full Name", "Institution"]) == text
+
+
+def test_posted_table_names_the_reviewer_asked(monkeypatch):
+    text = open(os.path.join(ROOT, "rev/reviewers_list.csv"), encoding="utf-8").read()
+    picker = object.__new__(ear_bot_reviewer.EAR_get_reviewer)
+    picker.data = get_EAR_reviewer.parse_csv(text)
+    for _ in range(20):  # random tie-breaks must not split the two
+        reviewer, table = picker.get_reviewer("IZW", "ERGA-BGE")
+        assert f"({reviewer})" in table.split("Selected reviewer:")[1].split("\n")[0]
+
+
+class _Repo:
+    def __init__(self, files):
+        self.files = files
+
+    def get_contents(self, path):
+        return type("C", (), {"decoded_content": self.files[path].encode(), "path": path, "sha": "x"})()
+
+
+def test_merge_rerun_is_not_recorded_twice(monkeypatch):
+    log = "PR,Species\nhttps://github.com/x/1,Elephas maximus\n"
+    committed = []
+    monkeypatch.setattr(ear_bot_reviewer, "commit", lambda repo, path, msg, content: committed.append(content))
+    picker = object.__new__(ear_bot_reviewer.EAR_get_reviewer)
+    picker.repo = _Repo({"rev/EAR_reviews.csv": log})
+    fields = dict(species="S, s", tag="T", requester_name="R", requester_affiliation="A", reviewer_name="V",
+                  reviewer_affiliation="B", supervisor_name="U", supervisor_affiliation="C", interaction_count=1,
+                  open_date="d", approval_date="e", other_participants="", notes="N/A")
+    assert picker.add_pr(pr_url="https://github.com/x/1", **fields) is False and not committed
+    assert picker.add_pr(pr_url="https://github.com/x/2", **fields) is True
+    assert committed[0].endswith('https://github.com/x/2,"S, s",T,R,A,V,B,U,C,1,d,e,,N/A\n')
+
+
+def test_ear_update_prs_get_activity_check_but_no_reviewer(monkeypatch):
+    checked = []
+    bot = object.__new__(ear_bot_reviewer.EARBotReviewer)
+    bot.valid_projects = ["ERGA-BGE"]
+    monkeypatch.setattr(bot, "_check_pr_activity", lambda pr, now: checked.append(pr.number), raising=False)
+
+    def pr(number, *labels):
+        return type("PR", (), {"number": number, "get_labels": lambda self: [type("L", (), {"name": n})() for n in labels]})()
+
+    # No assignee lookups, review requests or asks happen for these: they would raise on the fake PR.
+    bot.find_reviewer([pr(1, "EAR-UPDATE"), pr(2, "ERROR!"), pr(3), pr(4, "dependencies")])
+    assert checked == [1, 2]

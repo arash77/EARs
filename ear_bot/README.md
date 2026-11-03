@@ -71,7 +71,7 @@ No OK is needed from supervisors any more: the bot assigns one, and another supe
 | `ERGA-ATLASea` | Project type ATLASea | WF1 | WF6 (on close) or CLEAR command |
 | `ERROR!` | Validation problem (bad body, wrong file count, pre-review FAIL, etc.) | WF1 / WF2+4 | WF1 on next valid edit or push |
 | `EAR-UPDATE` | PR is modifying an already-approved EAR | WF1 | Manual / WF6 |
-| `DELAYED` | Researcher has not commented in ≥ 4 weeks | WF3 | Manual |
+| `DELAYED` | Researcher has not commented in ≥ 4 weeks (project, EAR-UPDATE and ERROR! PRs) | WF3 | Manual |
 | `STALLED` | Nobody has commented in ≥ 4 weeks | WF3 | WF3 when activity resumes |
 
 ---
@@ -121,11 +121,11 @@ Reviewer selection is implemented in `rev/get_EAR_reviewer.py` → `select_best_
 | `Working PRs` | Number of PRs the reviewer is currently assigned to |
 | `Calling Score` | Base score used for selection (higher = called more often) |
 
-The bot auto-commits changes to this file after each reviewer assignment and after each merge.
+The bot auto-commits changes to this file after each reviewer assignment and after each merge. It reads and writes it with Python's `csv` module, so a quoted field with a comma keeps its columns, and the selection table it posts comes from the same pick as the reviewer it asks.
 
 ### `rev/EAR_reviews.csv`
 
-Append-only log of completed reviews. One row per merged PR, written by WF6. Columns: PR URL, species, project tag, requester name/affiliation, reviewer name/affiliation, supervisor name/affiliation, interaction count, open date, approval date, other participants, notes.
+Append-only log of completed reviews. One row per merged PR, written by WF6. Re-running WF6 for a PR that is already in the log does not add a second row or credit the reviewer again. Columns: PR URL, species, project tag, requester name/affiliation, reviewer name/affiliation, supervisor name/affiliation, interaction count, open date, approval date, other participants, notes.
 
 ---
 
