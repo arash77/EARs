@@ -1,0 +1,58 @@
+# Data stored in mEleMax1_EAR.pdf, written by EARpdf_to_yaml.py v26.10.23
+
+ERGA Assembly Report: v26.10.21
+Tags: ERGA-CBP
+Report ID: e8c67d97
+
+TxID: '99487'
+ToLID: mEleMax1
+Species: Elephas maximus
+Class: Mammalia
+Order: Proboscidea
+
+Genome Traits:
+  Expected: {}
+  Observed: {}
+
+EBP metrics:
+  EBP quality code:
+    hap1: 7.C.Q60
+
+Flags: []
+
+Curation notes: Test curation notes
+
+Hi-C contact map temp link:
+  hap1: https://raw.githubusercontent.com/ERGA-consortium/EARs/main/README.md
+  hap2: NA
+
+Metrics: {}
+
+K-mer tool: Merqury
+BUSCO: NA
+
+FCS-GX flagged sequences:
+  hap1: '0'
+  hap2: '2'
+
+Data:
+  HiFi: 30x
+  Hi-C: 50x
+
+Pipeline: Hifiasm, YaHS
+
+Submitter: Brilliant Arash
+Affiliation: CNAG
+
+Date and time: 2026-11-03 12:00:00 CET
+
+EAR review:
+  PR: https://github.com/arash77/EARs/pull/47
+  Submitter: Brilliant Arash
+  Submitter affiliation: CNAG
+  Reviewer: Arash Test
+  Reviewer affiliation: IZW
+  Supervisor: Arash Test
+  Supervisor affiliation: IZW
+  Opened: '2026-11-03'
+  Merged: '2026-11-03'
