@@ -43,12 +43,12 @@ def check_link(url):
     return OK, "file found"
 
 
-def _code(value):
+def _code(value, limit=120):
     # PDF text goes into a GitHub comment: code spans keep @mentions and markdown inert.
     if value is None:
         return "missing"
     text = " ".join(str(value).replace("`", "'").split())
-    return f"`{text[:120]}`"
+    return f"`{text[:limit]}`"
 
 
 def _norm(value):
@@ -149,7 +149,7 @@ def format_comment(rows=(), version=None, error=None):
     if error:
         return (
             "### Pre-review\n"
-            f"{ICONS[FAIL]} **EAR data in the PDF:** could not read it: {_code(error)}.\n\n"
+            f"{ICONS[FAIL]} **EAR data in the PDF:** could not read it: {_code(error, limit=500)}.\n\n"
             "Please make the EAR with make_EAR.py v26.10.21 or later and upload the PDF it writes as it is. "
             "Programs that re-save PDFs (Ghostscript, print to PDF, online compressors) remove the data."
         )
