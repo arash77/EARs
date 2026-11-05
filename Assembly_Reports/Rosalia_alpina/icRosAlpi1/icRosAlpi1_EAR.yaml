@@ -1,0 +1,112 @@
+# Data stored in icRosAlpi1_EAR.pdf, written by EARpdf_to_yaml.py v26.10.23
+
+ERGA Assembly Report: v26.10.21
+Tags: ERGA-Community
+Report ID: 4f9dae64
+
+TxID: '1400418'
+ToLID: icRosAlpi1
+Species: Rosalia alpina
+Class: Insecta
+Order: Coleoptera
+
+Genome Traits:
+  Expected:
+    Haploid size (bp): 860,640,000
+    Haploid Number: '10 (source: ancestor)'
+    Ploidy: '2 (source: ancestor)'
+    Sample Sex: NA
+  Observed:
+    Haploid size (bp): 756,474,933
+    Haploid Number: '20'
+    Ploidy: '2'
+    Sample Sex: NA
+
+EBP metrics:
+  EBP quality code:
+    hap1: 6.7.Q58 (estimated 6.C.Q58)
+    hap2: 6.7.Q58 (estimated 6.C.Q58)
+
+Flags:
+  - Observed Haploid Number is different from Expected
+  - Kmer completeness value is less than 90 for hap1
+  - Kmer completeness value is less than 90 for hap2
+
+Curation notes: Severao contaminants where remmoved
+
+Hi-C contact map temp link:
+  hap1: https://www.erga-biodiversity.eu
+  hap2: NA
+
+Metrics:
+  hap1:
+    Total bp: 756,474,933
+    GC %: '33.26'
+    Gaps/Gbp: '672.86'
+    Total gap bp: 50,900
+    Scaffolds: '509'
+    Scaffold N50: 41,345,188
+    Scaffold L50: '8'
+    Scaffold L90: '17'
+    Contigs: 1,018
+    Contig N50: 2,448,781
+    Contig L50: '85'
+    Contig L90: '316'
+    QV: '58.27'
+    Kmer compl.: '81.37'
+    BUSCO sing.: 98.33%
+    BUSCO dupl.: 0.64%
+    BUSCO frag.: 0.61%
+    BUSCO miss.: 0.42%
+  hap2:
+    Total bp: 749,673,921
+    GC %: '33.26'
+    Gaps/Gbp: '630.94'
+    Total gap bp: 47,300
+    Scaffolds: '280'
+    Scaffold N50: 40,954,840
+    Scaffold L50: '8'
+    Scaffold L90: '17'
+    Contigs: '753'
+    Contig N50: 2,878,557
+    Contig L50: '82'
+    Contig L90: '278'
+    QV: '58.72'
+    Kmer compl.: '81.24'
+    BUSCO sing.: 98.20%
+    BUSCO dupl.: 0.45%
+    BUSCO frag.: 0.58%
+    BUSCO miss.: 0.77%
+
+K-mer tool: Merqury
+BUSCO:
+  tool: compleasm
+  ver: NA
+  lineage: insecta_odb12
+
+FCS-GX flagged sequences:
+  hap1: '0'
+  hap2: '0'
+
+Data:
+  HiFi: 30x
+  Hi-C: 40x
+
+Pipeline: Contigging done with hifiasm v0.25.0 (l2), followed by scaffolding with yahs v1.2.2. Manual
+  curation using pretext
+
+Submitter: Diego De Panis
+Affiliation: IZW
+
+Date and time: 2026-11-05 16:29:21 CET
+
+EAR review:
+  PR: https://github.com/arash77/EARs/pull/52
+  Submitter: Brilliant Arash
+  Submitter affiliation: CNAG
+  Reviewer: Arash Test
+  Reviewer affiliation: IZW
+  Supervisor: Arash Test
+  Supervisor affiliation: IZW
+  Opened: '2026-11-05'
+  Merged: '2026-11-05'
