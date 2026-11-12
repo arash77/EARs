@@ -19,7 +19,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
         with:
-          ref: "test/new-ear-bot-v2"
+          ref: "test/new-ear-bot-v3"
           persist-credentials: false
 
       - name: Save event data
