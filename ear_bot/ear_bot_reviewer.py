@@ -985,7 +985,7 @@ class EARBotReviewer:
     def _deadline(self, start_date, pr):
         current_date = start_date
         added_hours = timedelta(hours=0)
-        total_hours = timedelta(hours=0)  # TEST ONLY: requests time out at once
+        total_hours = timedelta(hours=0 if is_new_system(pr) else 100)  # TEST ONLY: new-system requests time out at once
         while added_hours != total_hours:
             remaining_hours = total_hours - added_hours
             time_to_add = min(remaining_hours, timedelta(days=1))
