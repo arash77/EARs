@@ -21,13 +21,13 @@ jobs:
         with:
           app-id: 917566
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          owner: "ERGA-consortium"
+          owner: "arash77"
           repositories: "EARs"
 
       - name: Checkout
         uses: actions/checkout@v7
         with:
-          ref: "main"
+          ref: "test/new-ear-bot-v2"
           token: ${{ steps.generate-token.outputs.token }}
           persist-credentials: false
 

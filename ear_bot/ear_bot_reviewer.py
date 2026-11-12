@@ -62,7 +62,7 @@ cet = pytz.timezone("CET")
 # in the PDF and 3 working days to reply. Older PRs keep the old system (no
 # pre-review, 100 working hours). Set it on the release day, e.g.
 # datetime(2026, 12, 1, tzinfo=pytz.utc); while it is None every PR is old.
-NEW_SYSTEM_FROM = None
+NEW_SYSTEM_FROM = datetime(2026, 11, 1, tzinfo=pytz.utc)
 
 
 def is_new_system(pr):
@@ -974,7 +974,7 @@ class EARBotReviewer:
     def _deadline(self, start_date, pr):
         current_date = start_date
         added_hours = timedelta(hours=0)
-        total_hours = timedelta(hours=72 if is_new_system(pr) else 100)
+        total_hours = timedelta(hours=0)  # TEST ONLY: requests time out at once
         while added_hours != total_hours:
             remaining_hours = total_hours - added_hours
             time_to_add = min(remaining_hours, timedelta(days=1))
