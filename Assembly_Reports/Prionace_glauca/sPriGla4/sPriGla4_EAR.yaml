@@ -1,0 +1,118 @@
+# Data stored in sPriGla4_EAR.pdf, written by EARpdf_to_yaml.py v26.11.11
+
+ERGA Assembly Report: v26.11.10
+Tags: ERGA-Community
+Report ID: a069c1d1
+
+TxID: '7815'
+ToLID: sPriGla4
+Species: Prionace glauca
+Class: Chondrichthyes
+Order: Carcharhiniformes
+
+Genome Traits:
+  Expected:
+    Haploid size (bp): 4,205,400,000
+    Haploid Number: '43 (source: direct)'
+    Ploidy: '2 (source: ancestor)'
+    Sample Sex: XY
+  Observed:
+    Haploid size (bp): 3,353,127,091
+    Haploid Number: '39'
+    Ploidy: '2'
+    Sample Sex: XX
+
+EBP metrics:
+  EBP quality code:
+    hap1: 6.8.Q64
+    hap2: 6.8.Q64 (estimated 6.C.Q64)
+
+Flags:
+  - Observed Haploid size (bp) has >20% difference with Expected
+  - Observed Haploid Number is different from Expected
+  - Observed sex is different from Sample sex
+  - Not 90% of assembly in chromosomes for hap1 (scaffold L90 = 94, expected <= 39)
+  - HiFi coverage is below the EBP recommendation of >15x per haplotype
+
+Comments: Lot's of haps removed
+
+Hi-C contact map temp link:
+  hap1: https://www.google.com
+  hap2: https://www.google.com
+
+Metrics:
+  hap1:
+    Total bp: 3,353,127,091
+    GC %: '44.73'
+    Gaps/Gbp: '600.63'
+    Total gap bp: 402,800
+    Scaffolds: 3,345
+    Scaffold N50: 100,735,960
+    Scaffold L50: '12'
+    Scaffold L90: '94'
+    Contigs: 5,359
+    Contig N50: 3,985,967
+    Contig L50: '213'
+    Contig L90: 1,242
+    QV: '64.08'
+    Kmer compl.: '87.07'
+    Kmer dupl.: 1.21%
+    BUSCO sing.: 91.0%
+    BUSCO dupl.: 2.3%
+    BUSCO frag.: 3.3%
+    BUSCO miss.: 3.4%
+  hap2:
+    Total bp: 3,175,994,182
+    GC %: '44.39'
+    Gaps/Gbp: '588.48'
+    Total gap bp: 373,800
+    Scaffolds: 2,183
+    Scaffold N50: 105,986,868
+    Scaffold L50: '11'
+    Scaffold L90: '36'
+    Contigs: 4,052
+    Contig N50: 4,501,206
+    Contig L50: '176'
+    Contig L90: '996'
+    QV: '64.65'
+    Kmer compl.: '86.19'
+    Kmer dupl.: 0.96%
+    BUSCO sing.: 90.9%
+    BUSCO dupl.: 2.2%
+    BUSCO frag.: 2.7%
+    BUSCO miss.: 4.2%
+
+K-mer tool: Merqury
+Combined (hap1+hap2):
+  QV: '64.35'
+  k-mer completeness: 99.60%
+BUSCO:
+  tool: BUSCO
+  ver: 6.0.0 (euk_genome_met, metaeuk)
+  lineage: vertebrata_odb10 (genomes:67, BUSCOs:3354)
+
+FCS-GX flagged sequences:
+  hap1: '2'
+  hap2: '0'
+
+Data:
+  HiFi: 55.80 Gbp (16.6x)
+  Hi-C: NA
+
+Pipeline: I used hifiasm and yahs
+
+Submitter: John Doe
+Affiliation: IZW
+
+Date and time: 2026-11-12 16:40:53 CET
+
+EAR review:
+  PR: https://github.com/arash77/EARs/pull/53
+  Submitter: Brilliant Arash
+  Submitter affiliation: musée d'histoire naturelle, bern
+  Reviewer: Kad Arash
+  Reviewer affiliation: UNIFI
+  Supervisor: Arash Test
+  Supervisor affiliation: IZW
+  Opened: '2026-11-12'
+  Merged: '2026-11-12'
