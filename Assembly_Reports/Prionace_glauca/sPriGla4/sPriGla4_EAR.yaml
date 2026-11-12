@@ -2,7 +2,7 @@
 
 ERGA Assembly Report: v26.11.10
 Tags: ERGA-Community
-Report ID: a069c1d1
+Report ID: 11944b95
 
 TxID: '7815'
 ToLID: sPriGla4
@@ -92,12 +92,10 @@ BUSCO:
   lineage: vertebrata_odb10 (genomes:67, BUSCOs:3354)
 
 FCS-GX flagged sequences:
-  hap1: '2'
-  hap2: '0'
+  hap1: NA
+  hap2: NA
 
-Data:
-  HiFi: 55.80 Gbp (16.6x)
-  Hi-C: NA
+Data: NA
 
 Pipeline: I used hifiasm and yahs
 
@@ -105,14 +103,3 @@ Submitter: John Doe
 Affiliation: IZW
 
 Date and time: 2026-11-12 16:40:53 CET
-
-EAR review:
-  PR: https://github.com/arash77/EARs/pull/55
-  Submitter: Brilliant Arash
-  Submitter affiliation: CNAG
-  Reviewer: Kad Arash
-  Reviewer affiliation: UNIFI
-  Supervisor: Arash Test
-  Supervisor affiliation: IZW
-  Opened: '2026-11-12'
-  Merged: '2026-11-12'
