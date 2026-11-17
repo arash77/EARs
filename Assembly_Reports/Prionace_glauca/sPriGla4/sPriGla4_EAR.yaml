@@ -1,0 +1,112 @@
+# Data stored in sPriGla4_EAR.pdf, written by EARpdf_to_yaml.py v26.11.11
+
+ERGA Assembly Report: v26.11.16
+Tags: ERGA-Community
+Report ID: 161337cd
+
+TxID: '7815'
+ToLID: sPriGla4
+Species: Prionace glauca
+Class: Chondrichthyes
+Order: Carcharhiniformes
+
+Genome Traits:
+  Expected:
+    Haploid size (bp): 4,205,400,000
+    Haploid Number: '43 (source: direct)'
+    Ploidy: '2 (source: ancestor)'
+    Sample Sex: XY
+  Observed:
+    Haploid size (bp): 1,200,000,000
+    Haploid Number: '43'
+    Ploidy: '2'
+    Sample Sex: NA
+
+EBP metrics:
+  EBP quality code:
+    hap1: 6.7.QNA (estimated 6.C.QNA)
+    hap2: 6.7.QNA (estimated 6.C.QNA)
+
+Flags:
+  - Observed Haploid size (bp) has >20% difference with Expected
+  - HiFi coverage is below the EBP recommendation of >15x per haplotype
+
+Comments: Manual curation with PretextView
+
+Hi-C contact map temp link:
+  hap1: https://raw.githubusercontent.com/ERGA-consortium/EARs/main/README.md
+  hap2: https://github.com/ERGA-consortium
+
+Metrics:
+  hap1:
+    Total bp: 1,200,000,000
+    GC %: '41.2'
+    Gaps/Gbp: '225'
+    Total gap bp: 1,000,000
+    Scaffolds: '30'
+    Scaffold N50: 52,000,000
+    Scaffold L50: '10'
+    Scaffold L90: '25'
+    Contigs: '300'
+    Contig N50: 9,000,000
+    Contig L50: '50'
+    Contig L90: '21'
+    QV: NA
+    Kmer compl.: NA
+    Kmer dupl.: NA
+    BUSCO sing.: 94.0%
+    BUSCO dupl.: 2.1%
+    BUSCO frag.: 1.2%
+    BUSCO miss.: 2.7%
+  hap2:
+    Total bp: 1,200,000,000
+    GC %: '41.2'
+    Gaps/Gbp: '225'
+    Total gap bp: 1,000,000
+    Scaffolds: '30'
+    Scaffold N50: 48,000,000
+    Scaffold L50: '10'
+    Scaffold L90: '25'
+    Contigs: '300'
+    Contig N50: 9,000,000
+    Contig L50: '50'
+    Contig L90: '# gaps in scaffolds: 270'
+    QV: NA
+    Kmer compl.: NA
+    Kmer dupl.: NA
+    BUSCO sing.: 94.0%
+    BUSCO dupl.: 2.1%
+    BUSCO frag.: 1.2%
+    BUSCO miss.: 2.7%
+
+K-mer tool: Merqury
+BUSCO:
+  tool: BUSCO
+  ver: 5.8.2 (euk_genome_min, miniprot)
+  lineage: vertebrata_odb10 (genomes:67, BUSCOs:3354)
+
+FCS-GX flagged sequences:
+  hap1: '0'
+  hap2: '1'
+
+Data:
+  HiFi: 30.20 Gbp (25.2x)
+  Hi-C: NA
+
+Pipeline: hifiasm 0.19 Hi-C mode, YaHS default
+
+Submitter: Brilliant Arash
+Affiliation: CNAG
+
+Date and time: 2026-11-17 10:31:33 CET
+
+EAR review:
+  PR: https://github.com/arash77/EARs/pull/63
+  Submitter: Brilliant Arash
+  Submitter affiliation: CNAG
+  Reviewer: Kad Arash
+  Reviewer affiliation: UNIFI
+  Supervisor: Arash Test
+  Supervisor affiliation: IZW
+  Opened: '2026-11-17'
+  Merged: '2026-11-17'
