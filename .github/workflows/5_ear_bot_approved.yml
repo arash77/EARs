@@ -19,7 +19,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
         with:
-          ref: "main"
+          ref: "test/pdf-update-tag"
           persist-credentials: false
 
       - name: Save event data
