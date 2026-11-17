@@ -7,7 +7,12 @@ on:
     # office hours (in_office_hours() in ear_bot_reviewer.py).
     - cron: "0 7-15 * * 1-5"
 
-  workflow_dispatch:
+  workflow_dispatch:  # TEST ONLY inputs
+    inputs:
+      office:
+        default: ""
+      stale_min:
+        default: ""
 
 concurrency:
   group: ear-bot-scheduled
@@ -25,13 +30,13 @@ jobs:
         with:
           app-id: 917566
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          owner: "ERGA-consortium"
+          owner: "arash77"
           repositories: "EARs"
 
       - name: Checkout
         uses: actions/checkout@v7
         with:
-          ref: "main"
+          ref: "test/new-ear-bot-v4"
           token: ${{ steps.generate-token.outputs.token }}
           persist-credentials: false
 
@@ -51,4 +56,6 @@ jobs:
         env:
           GITHUB_APP_TOKEN: ${{ steps.generate-token.outputs.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
+          TEST_OFFICE: ${{ inputs.office }}
+          TEST_STALE_MIN: ${{ inputs.stale_min }}
         run: python -u ear_bot/ear_bot_reviewer.py --search

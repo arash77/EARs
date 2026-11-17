@@ -64,14 +64,14 @@ cet = pytz.timezone("Europe/Berlin")  # Berlin time for everyone, summer time in
 
 # Inactivity ping: after 7 working days without activity, and again 7 working
 # days after the last ping. PING_TEXT is how the bot finds its last ping.
-PING_AFTER_HOURS = 7 * 24
+PING_AFTER_HOURS = 0.05  # TEST ONLY: 3 minutes
 PING_TEXT = "without any movements on this PR!"
 
 # PRs opened on or after this day use the new system: pre-review of the EAR data
 # in the PDF and 3 working days to reply. Older PRs keep the old system (no
 # pre-review, 100 working hours). Set it on the release day, e.g.
 # datetime(2026, 12, 1, tzinfo=pytz.utc); while it is None every PR is old.
-NEW_SYSTEM_FROM = None
+NEW_SYSTEM_FROM = datetime(2026, 11, 1, tzinfo=pytz.utc)  # TEST ONLY
 
 
 def is_new_system(pr):
@@ -89,6 +89,8 @@ def is_working_day(moment):
 def in_office_hours(moment):
     """When the bot may post on its own schedule: 9:00 to 17:00 Berlin time on working days."""
     moment = moment.astimezone(cet)
+    if os.environ.get("TEST_OFFICE") in ("yes", "no"):  # TEST ONLY
+        return os.environ["TEST_OFFICE"] == "yes"
     return is_working_day(moment) and 9 <= moment.hour < 17
 
 
@@ -944,7 +946,7 @@ class EARBotReviewer:
         and again 7 working days after the last ping, only when can_post (office
         hours on scheduled runs) and while neither label is set.
         """
-        four_weeks_ago = current_date - timedelta(weeks=4)
+        four_weeks_ago = current_date - (timedelta(minutes=int(os.environ['TEST_STALE_MIN'])) if os.environ.get('TEST_STALE_MIN') else timedelta(weeks=4))  # TEST ONLY
         labels = {label.name for label in pr.get_labels()}
 
         researcher = pr.user.login.lower()
@@ -1087,7 +1089,7 @@ class EARBotReviewer:
         return all(level != pre_review.FAIL for level, _, _ in rows)
 
     def _deadline(self, start_date, pr):
-        return add_working_hours(start_date, 72 if is_new_system(pr) else 100)
+        return add_working_hours(start_date, 0 if is_new_system(pr) else 100)  # TEST ONLY: instant timeouts
 
     def _create_slack_post(self, content):
         from slack_sdk import WebClient
